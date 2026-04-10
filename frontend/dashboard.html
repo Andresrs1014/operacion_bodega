@@ -47,6 +47,8 @@
             <span id="reloj" class="font-mono text-red-100"></span>
         </div>
         <span id="headerUser" class="text-sm font-bold text-red-100"></span>
+        <a id="btn-usuarios" href="usuarios.html" class="hidden bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">USUARIOS</a>
+        <a href="menu.html" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">OPERACIONES</a>
         <button onclick="api.logout()" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">SALIR</button>
     </div>
 </header>
@@ -195,6 +197,7 @@ window.onload = () => {
     const user = api.getUser();
     if (user.rol === 'operario') { window.location.href = '/menu.html'; return; }
     document.getElementById('headerUser').textContent = user.nombre;
+    if (user.rol === 'admin') document.getElementById('btn-usuarios').classList.remove('hidden');
 
     iniciarReloj();
     cargarTodo();
