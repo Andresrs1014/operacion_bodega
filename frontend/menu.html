@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRAKEPAK - Menú</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/api.js"></script>
+</head>
+<body class="min-h-screen bg-gray-100 flex flex-col">
+
+    <header class="bg-red-700 text-white px-6 py-3 flex justify-between items-center shadow-md">
+        <div>
+            <span class="font-black text-lg tracking-widest">BRAKEPAK</span>
+            <span class="text-red-200 text-xs ml-3 font-mono">LOGIMAT</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span id="headerUser" class="text-sm font-bold"></span>
+            <button onclick="api.logout()" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1 rounded transition">
+                SALIR
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex items-center justify-center p-8">
+        <div class="grid grid-cols-1 gap-6 w-full max-w-sm">
+
+            <a href="index_estructura.html" class="bg-white rounded-2xl shadow-lg p-8 text-center hover:shadow-xl hover:scale-105 transition-all cursor-pointer border-2 border-transparent hover:border-red-200">
+                <div class="text-5xl mb-4">📦</div>
+                <div class="text-xl font-black text-gray-800 tracking-wide">EMPAQUE</div>
+                <div class="text-xs text-gray-400 mt-2">Generar etiquetas de cajas y estibas</div>
+            </a>
+
+            <a href="validacion_estructura.html" class="bg-white rounded-2xl shadow-lg p-8 text-center hover:shadow-xl hover:scale-105 transition-all cursor-pointer border-2 border-transparent hover:border-blue-200">
+                <div class="text-5xl mb-4">✅</div>
+                <div class="text-xl font-black text-gray-800 tracking-wide">VALIDACIÓN</div>
+                <div class="text-xs text-gray-400 mt-2">Alistamiento y validación de pedidos</div>
+            </a>
+
+        </div>
+    </main>
+
+    <script>
+        window.onload = () => {
+            if (!api.isLoggedIn()) {
+                window.location.href = '/login.html';
+                return;
+            }
+            const user = api.getUser();
+            document.getElementById('headerUser').textContent = user.nombre;
+        };
+    </script>
+</body>
+</html>

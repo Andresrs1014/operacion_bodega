@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRAKEPAK · Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="js/api.js"></script>
+    <style>
+        body { font-family: 'Arial', sans-serif; background: #f1f5f9; }
+
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 8px rgba(0,0,0,0.07); padding: 20px; }
+
+        .medal-1 { background: linear-gradient(135deg, #ffd700, #ffb800); }
+        .medal-2 { background: linear-gradient(135deg, #c0c0c0, #a8a8a8); }
+        .medal-3 { background: linear-gradient(135deg, #cd7f32, #b8692a); }
+        .medal-n { background: #e2e8f0; color: #64748b; }
+
+        .badge-ok      { background: #dcfce7; color: #166534; }
+        .badge-novedad { background: #fef9c3; color: #854d0e; }
+        .badge-activo  { background: #dbeafe; color: #1e40af; }
+
+        .bar-fill { transition: width 0.8s ease; }
+
+        @keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+        .pulse-dot { animation: pulse-dot 1.5s infinite; }
+
+        .periodo-btn.active { background: #be123c; color: white; }
+        .periodo-btn { transition: all 0.2s; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-red-700 text-white px-6 py-3 flex justify-between items-center shadow-lg">
+    <div class="flex items-center gap-4">
+        <span class="font-black text-xl tracking-widest">BRAKEPAK</span>
+        <span class="text-red-200 text-xs font-mono border-l border-red-500 pl-4">DASHBOARD · LOGIMAT</span>
+    </div>
+    <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 text-xs">
+            <span class="w-2 h-2 bg-green-400 rounded-full pulse-dot"></span>
+            <span id="reloj" class="font-mono text-red-100"></span>
+        </div>
+        <span id="headerUser" class="text-sm font-bold text-red-100"></span>
+        <button onclick="api.logout()" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">SALIR</button>
+    </div>
+</header>
+
+<main class="p-6 max-w-7xl mx-auto space-y-6">
+
+    <!-- SELECTOR DE PERIODO + BOTONES REPORTE -->
+    <div class="flex items-center justify-between flex-wrap gap-3">
+        <h1 class="text-lg font-black text-slate-700 tracking-wide">PANEL DE CONTROL</h1>
+        <div class="flex gap-2 flex-wrap items-center">
+            <button class="periodo-btn active text-xs font-bold px-4 py-2 rounded-full border border-red-700 text-red-700" onclick="setPeriodo('dia', this)">HOY</button>
+            <button class="periodo-btn text-xs font-bold px-4 py-2 rounded-full border border-slate-300 text-slate-600" onclick="setPeriodo('semana', this)">SEMANA</button>
+            <button class="periodo-btn text-xs font-bold px-4 py-2 rounded-full border border-slate-300 text-slate-600" onclick="setPeriodo('mes', this)">MES</button>
+
+            <div class="w-px h-6 bg-slate-200 mx-1"></div>
+
+            <button id="btn-quincenal" onclick="enviarReporte('quincenal')"
+                class="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition">
+                <span>📧</span> Enviar Quincenal
+            </button>
+            <button id="btn-mensual" onclick="enviarReporte('mensual')"
+                class="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 transition">
+                <span>📊</span> Enviar Mensual
+            </button>
+        </div>
+    </div>
+
+    <!-- TOAST de confirmación -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 hidden">
+        <div id="toast-inner" class="flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-sm font-bold text-white">
+            <span id="toast-icon"></span>
+            <span id="toast-msg"></span>
+        </div>
+    </div>
+
+    <!-- TARJETAS RESUMEN -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="card border-l-4 border-blue-500">
+            <div class="text-xs text-slate-400 font-bold uppercase mb-1">Pedidos Validados</div>
+            <div id="k-total" class="text-4xl font-black text-slate-800">--</div>
+            <div class="text-xs text-slate-400 mt-1">en el periodo</div>
+        </div>
+        <div class="card border-l-4 border-green-500">
+            <div class="text-xs text-slate-400 font-bold uppercase mb-1">Tasa de Exactitud</div>
+            <div id="k-exactitud" class="text-4xl font-black text-green-600">--%</div>
+            <div class="text-xs text-slate-400 mt-1">pedidos sin novedad</div>
+        </div>
+        <div class="card border-l-4 border-orange-500">
+            <div class="text-xs text-slate-400 font-bold uppercase mb-1">Tiempo Promedio</div>
+            <div id="k-tiempo" class="text-4xl font-black text-orange-500">-- <span class="text-lg">min</span></div>
+            <div class="text-xs text-slate-400 mt-1">por pedido</div>
+        </div>
+        <div class="card border-l-4 border-purple-500">
+            <div class="text-xs text-slate-400 font-bold uppercase mb-1">Empaques Generados</div>
+            <div id="k-empaques" class="text-4xl font-black text-purple-600">--</div>
+            <div class="text-xs text-slate-400 mt-1">etiquetas impresas</div>
+        </div>
+    </div>
+
+    <!-- FILA PRINCIPAL -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- RANKING -->
+        <div class="card lg:col-span-2">
+            <div class="flex justify-between items-center mb-5">
+                <div>
+                    <h2 class="font-black text-slate-700 text-base tracking-wide">RANKING DE AUXILIARES</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Score = 60% exactitud + 40% velocidad</p>
+                </div>
+                <span class="text-2xl">🏆</span>
+            </div>
+            <div id="ranking-lista" class="space-y-3">
+                <div class="text-center text-slate-400 text-sm py-8">Cargando...</div>
+            </div>
+        </div>
+
+        <!-- ACTIVOS AHORA -->
+        <div class="card flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="font-black text-slate-700 text-base tracking-wide">EN PROCESO</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Actividad en tiempo real</p>
+                </div>
+                <span class="flex items-center gap-1.5 text-xs text-green-600 font-bold">
+                    <span class="w-2 h-2 bg-green-500 rounded-full pulse-dot"></span>LIVE
+                </span>
+            </div>
+            <div id="activos-lista" class="flex-1 space-y-3 overflow-y-auto max-h-80">
+                <div class="text-center text-slate-400 text-sm py-8">Sin actividad</div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-400 text-center">
+                Actualiza cada 30s
+            </div>
+        </div>
+    </div>
+
+    <!-- FILA GRÁFICAS -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- GRÁFICA DE BARRAS: validaciones por hora -->
+        <div class="card">
+            <h2 class="font-black text-slate-700 text-base tracking-wide mb-4">ACTIVIDAD POR HORA · HOY</h2>
+            <canvas id="chartHoras" height="160"></canvas>
+        </div>
+
+        <!-- GRÁFICA: OK vs NOVEDADES por auxiliar -->
+        <div class="card">
+            <h2 class="font-black text-slate-700 text-base tracking-wide mb-4">EXACTITUD POR AUXILIAR</h2>
+            <canvas id="chartExactitud" height="160"></canvas>
+        </div>
+    </div>
+
+    <!-- TABLA DETALLADA -->
+    <div class="card">
+        <h2 class="font-black text-slate-700 text-base tracking-wide mb-4">DETALLE DE AUXILIARES</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b-2 border-slate-100">
+                        <th class="text-left py-2 px-3 text-xs font-bold text-slate-400 uppercase">#</th>
+                        <th class="text-left py-2 px-3 text-xs font-bold text-slate-400 uppercase">Auxiliar</th>
+                        <th class="text-center py-2 px-3 text-xs font-bold text-slate-400 uppercase">Pedidos</th>
+                        <th class="text-center py-2 px-3 text-xs font-bold text-slate-400 uppercase">OK</th>
+                        <th class="text-center py-2 px-3 text-xs font-bold text-slate-400 uppercase">Novedades</th>
+                        <th class="text-center py-2 px-3 text-xs font-bold text-slate-400 uppercase">Exactitud</th>
+                        <th class="text-center py-2 px-3 text-xs font-bold text-slate-400 uppercase">Prom. Min</th>
+                        <th class="text-center py-2 px-3 text-xs font-bold text-slate-400 uppercase">Score</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-auxiliares">
+                    <tr><td colspan="8" class="text-center text-slate-400 py-8">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<script>
+// ──────────────────────────────────────────────────────────────────────────────
+// Guard + init
+// ──────────────────────────────────────────────────────────────────────────────
+window.onload = () => {
+    if (!api.isLoggedIn()) { window.location.href = '/login.html'; return; }
+
+    const user = api.getUser();
+    if (user.rol === 'operario') { window.location.href = '/menu.html'; return; }
+    document.getElementById('headerUser').textContent = user.nombre;
+
+    iniciarReloj();
+    cargarTodo();
+    setInterval(cargarActivos, 30000);
+};
+
+let periodoActual = 'dia';
+let chartHoras = null;
+let chartExactitud = null;
+
+function iniciarReloj() {
+    function tick() {
+        const now = new Date();
+        document.getElementById('reloj').textContent =
+            now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    tick();
+    setInterval(tick, 1000);
+}
+
+function setPeriodo(p, btn) {
+    periodoActual = p;
+    document.querySelectorAll('.periodo-btn').forEach(b => {
+        b.classList.remove('active');
+        b.classList.add('border-slate-300', 'text-slate-600');
+        b.classList.remove('border-red-700', 'text-red-700');
+    });
+    btn.classList.add('active');
+    btn.classList.remove('border-slate-300', 'text-slate-600');
+    btn.classList.add('border-red-700', 'text-red-700');
+    cargarTodo();
+}
+
+async function cargarTodo() {
+    await Promise.all([cargarResumen(), cargarRanking(), cargarActivos(), cargarTendencia()]);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Resumen KPIs
+// ──────────────────────────────────────────────────────────────────────────────
+async function cargarResumen() {
+    try {
+        const d = await api.request('GET', `/kpis/resumen?periodo=${periodoActual}`);
+        document.getElementById('k-total').textContent    = d.total_validaciones;
+        document.getElementById('k-exactitud').textContent = d.tasa_exactitud + '%';
+        document.getElementById('k-tiempo').innerHTML     = `${d.promedio_minutos_por_pedido} <span class="text-lg">min</span>`;
+        document.getElementById('k-empaques').textContent = d.total_empaques;
+    } catch (e) { console.error('Resumen:', e); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Ranking
+// ──────────────────────────────────────────────────────────────────────────────
+async function cargarRanking() {
+    try {
+        const ranking = await api.request('GET', `/kpis/ranking?periodo=${periodoActual}`);
+        renderRanking(ranking);
+        renderTabla(ranking);
+        renderChartExactitud(ranking);
+    } catch (e) { console.error('Ranking:', e); }
+}
+
+function medallaClase(pos) {
+    if (pos === 1) return 'medal-1 text-yellow-900';
+    if (pos === 2) return 'medal-2 text-gray-800';
+    if (pos === 3) return 'medal-3 text-amber-900';
+    return 'medal-n';
+}
+
+function medallaIcon(pos) {
+    if (pos === 1) return '🥇';
+    if (pos === 2) return '🥈';
+    if (pos === 3) return '🥉';
+    return `<span class="font-black text-sm">${pos}</span>`;
+}
+
+function scoreBarra(score) {
+    const color = score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-400' : 'bg-red-400';
+    return `<div class="w-full bg-slate-100 rounded-full h-1.5 mt-1">
+        <div class="bar-fill ${color} h-1.5 rounded-full" style="width:${score}%"></div>
+    </div>`;
+}
+
+function renderRanking(ranking) {
+    const el = document.getElementById('ranking-lista');
+    if (!ranking.length) {
+        el.innerHTML = '<div class="text-center text-slate-400 text-sm py-8">Sin datos para el periodo</div>';
+        return;
+    }
+
+    el.innerHTML = ranking.map(r => `
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center text-lg font-black shrink-0 ${medallaClase(r.posicion)}">
+                ${medallaIcon(r.posicion)}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="font-bold text-slate-800 text-sm truncate">${r.nombre}</div>
+                <div class="flex gap-3 text-xs text-slate-500 mt-0.5">
+                    <span>${r.total_pedidos} pedidos</span>
+                    <span>·</span>
+                    <span>${r.promedio_minutos} min/ped</span>
+                    <span>·</span>
+                    <span class="text-green-600">${r.exactitud}% exacto</span>
+                </div>
+                ${scoreBarra(r.score)}
+            </div>
+            <div class="text-right shrink-0">
+                <div class="text-xl font-black text-slate-700">${r.score}</div>
+                <div class="text-xs text-slate-400">score</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderTabla(ranking) {
+    const el = document.getElementById('tabla-auxiliares');
+    if (!ranking.length) {
+        el.innerHTML = '<tr><td colspan="8" class="text-center text-slate-400 py-8">Sin datos</td></tr>';
+        return;
+    }
+
+    el.innerHTML = ranking.map(r => {
+        const exactColor = r.exactitud >= 90 ? 'text-green-600 font-bold' : r.exactitud >= 70 ? 'text-yellow-600 font-bold' : 'text-red-500 font-bold';
+        const tiempoColor = r.promedio_minutos <= 8 ? 'text-green-600 font-bold' : r.promedio_minutos <= 15 ? 'text-yellow-600 font-bold' : 'text-red-500 font-bold';
+        return `
+        <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
+            <td class="py-3 px-3 font-black text-slate-400">${medallaIcon(r.posicion)}</td>
+            <td class="py-3 px-3">
+                <div class="font-bold text-slate-800">${r.nombre}</div>
+                <div class="text-xs text-slate-400">${r.cedula}</div>
+            </td>
+            <td class="py-3 px-3 text-center font-bold text-slate-700">${r.total_pedidos}</td>
+            <td class="py-3 px-3 text-center"><span class="badge-ok px-2 py-0.5 rounded-full text-xs font-bold">${r.total_ok}</span></td>
+            <td class="py-3 px-3 text-center"><span class="badge-novedad px-2 py-0.5 rounded-full text-xs font-bold">${r.total_novedades}</span></td>
+            <td class="py-3 px-3 text-center ${exactColor}">${r.exactitud}%</td>
+            <td class="py-3 px-3 text-center ${tiempoColor}">${r.promedio_minutos}</td>
+            <td class="py-3 px-3 text-center">
+                <span class="text-lg font-black ${r.score >= 80 ? 'text-green-600' : r.score >= 60 ? 'text-yellow-500' : 'text-red-500'}">${r.score}</span>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Activos en tiempo real
+// ──────────────────────────────────────────────────────────────────────────────
+async function cargarActivos() {
+    try {
+        const activos = await api.request('GET', '/kpis/activos');
+        const el = document.getElementById('activos-lista');
+
+        if (!activos.length) {
+            el.innerHTML = '<div class="text-center text-slate-400 text-sm py-8">Ningún auxiliar en proceso</div>';
+            return;
+        }
+
+        el.innerHTML = activos.map(a => {
+            const alerta = a.minutos_transcurridos > 20;
+            return `
+            <div class="p-3 rounded-xl border ${alerta ? 'border-orange-200 bg-orange-50' : 'border-blue-100 bg-blue-50'}">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="font-bold text-slate-800 text-sm">${a.auxiliar}</div>
+                        <div class="text-xs text-slate-500 mt-0.5">Pedido: <span class="font-bold">${a.numero_pedido}</span></div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-black text-lg ${alerta ? 'text-orange-600' : 'text-blue-600'}">${a.minutos_transcurridos}m</div>
+                        ${alerta ? '<div class="text-xs text-orange-500 font-bold">⚠ Tarda mucho</div>' : ''}
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) { console.error('Activos:', e); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Gráfica: actividad por hora
+// ──────────────────────────────────────────────────────────────────────────────
+async function cargarTendencia() {
+    try {
+        const data = await api.request('GET', '/kpis/tendencia-hoy');
+        const labels = data.map(d => `${d.hora}:00`);
+        const values = data.map(d => d.validaciones);
+
+        if (chartHoras) chartHoras.destroy();
+        chartHoras = new Chart(document.getElementById('chartHoras'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Validaciones',
+                    data: values,
+                    backgroundColor: values.map(v => v === Math.max(...values) ? '#be123c' : '#fca5a5'),
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    } catch (e) { console.error('Tendencia:', e); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Gráfica: exactitud por auxiliar
+// ──────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────────
+// Envío manual de reportes
+// ──────────────────────────────────────────────────────────────────────────────
+async function enviarReporte(tipo) {
+    const btn = document.getElementById(`btn-${tipo}`);
+    const textoOriginal = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="animate-spin">⏳</span> Enviando...';
+
+    try {
+        await api.request('POST', `/reportes/enviar/${tipo}`);
+        showToast(`✅ Reporte ${tipo} enviado a los coordinadores`, 'green');
+    } catch (e) {
+        showToast(`❌ Error: ${e.message}`, 'red');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
+    }
+}
+
+function showToast(msg, color) {
+    const toast = document.getElementById('toast');
+    const inner = document.getElementById('toast-inner');
+    const msgEl = document.getElementById('toast-msg');
+
+    inner.style.background = color === 'green' ? '#16a34a' : '#dc2626';
+    msgEl.textContent = msg;
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 4000);
+}
+
+function renderChartExactitud(ranking) {
+    if (!ranking.length) return;
+
+    const top = ranking.slice(0, 8); // máximo 8 para legibilidad
+    const labels = top.map(r => r.nombre.split(' ')[0]);
+    const ok = top.map(r => r.exactitud);
+    const novedades = top.map(r => 100 - r.exactitud);
+
+    if (chartExactitud) chartExactitud.destroy();
+    chartExactitud = new Chart(document.getElementById('chartExactitud'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'OK',
+                    data: ok,
+                    backgroundColor: '#4ade80',
+                    borderRadius: 6,
+                },
+                {
+                    label: 'Novedad',
+                    data: novedades,
+                    backgroundColor: '#fbbf24',
+                    borderRadius: 6,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { stacked: true, grid: { display: false } },
+                y: { stacked: true, max: 100, ticks: { callback: v => v + '%' }, grid: { color: '#f1f5f9' } }
+            },
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { size: 11 } } },
+                tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw}%` } }
+            }
+        }
+    });
+}
+</script>
+</body>
+</html>

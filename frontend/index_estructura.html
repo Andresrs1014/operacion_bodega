@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRAKEPAK - V22 (Estibas Detalladas)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&family=Roboto:wght@900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/style_index.css" />
+    <script src="js/api.js"></script>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+    
+    <!-- Session guard: redirige a login si no hay token -->
+    <script>if (!localStorage.getItem('bp_token')) window.location.href = '/login.html';</script>
+
+    <header class="bg-red-700 text-white px-4 py-2 flex justify-between items-center shadow-md z-30 shrink-0">
+        <div class="flex items-center gap-3">
+            <h1 class="text-lg font-bold tracking-wide">SISTEMA DE EMPAQUE</h1>
+            <div class="flex flex-col items-start">
+                <span class="bg-red-800 text-red-100 text-[10px] px-2 py-0.5 rounded border border-red-600">V22</span>
+                <span class="text-[9px] text-red-200 font-mono mt-0.5">Powered and Designed By Laura Peláez for Logimat</span>
+            </div>
+        </div>
+        <button onclick="downloadDailyLog()" class="bg-white text-red-700 hover:bg-gray-100 px-4 py-2 rounded text-xs font-bold flex items-center gap-2 shadow transition">
+            REPORTE
+        </button>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <div class="w-[450px] bg-white border-r border-gray-300 flex flex-col shadow-lg z-20 relative">
+            <div class="bg-gray-50 p-5 border-b border-gray-200">
+                <div class="flex justify-between items-end mb-2">
+                    <h2 class="text-sm font-bold text-gray-700 uppercase flex items-center gap-2">
+                        <span class="bg-gray-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">1</span> Cargar Excel
+                    </h2>
+                    <span id="dataTime" class="text-[10px] text-gray-400 font-mono">Sin datos</span>
+                </div>
+                <input type="file" id="excelInput" accept=".xlsx, .xls" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" onchange="handleFile(this)">
+                <div class="text-[10px] text-gray-400 mt-2 ml-2"><strong>Nota:</strong> Cierra el archivo en Excel antes de cargar.</div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-5 flex flex-col bg-white">
+                <div class="mb-6">
+                    <h2 class="text-sm font-bold text-gray-700 uppercase flex items-center gap-2 mb-3">
+                        <span class="bg-gray-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">2</span> Escanear
+                    </h2>
+                    <input type="text" id="scanInput" class="w-full border-2 border-gray-300 rounded-lg py-4 px-4 text-2xl font-bold text-gray-800 placeholder-gray-300 focus:border-red-600 focus:ring-4 focus:ring-red-50 outline-none transition-all disabled:bg-gray-100" placeholder="Pedido..." onkeypress="handleEnter(event)" disabled>
+                </div>
+                <div class="flex-1 border rounded-lg bg-gray-50 p-2 mb-4 flex flex-col min-h-[120px]">
+                    <div class="flex justify-between items-center mb-2 border-b pb-1 px-2">
+                        <span class="text-[10px] font-bold text-gray-500 uppercase">Pedidos en la caja:</span>
+                        <button onclick="clearSession()" class="text-[10px] text-red-500 hover:text-red-700 font-bold underline">LIMPIAR</button>
+                    </div>
+                    <div id="scanList" class="flex-1 overflow-y-auto space-y-1 px-2">
+                        <div class="text-center text-gray-400 text-xs italic mt-4">...</div>
+                    </div>
+                </div>
+
+                <!-- PANEL AZUL: CONFIGURACIÓN DE CAJAS/ESTIBAS -->
+                <div class="bg-blue-50 rounded-xl p-4 border border-blue-100 mb-4 opacity-50 pointer-events-none" id="boxControl">
+                    
+                    <!-- SELECTOR TIPO -->
+                    <div class="flex justify-center gap-4 mb-3 pb-2 border-b border-blue-200">
+                        <label class="flex items-center gap-2 cursor-pointer bg-white px-3 py-1 rounded shadow-sm border border-blue-100 hover:bg-blue-50 transition">
+                            <input type="radio" name="packType" value="caja" checked onchange="updatePackMode()" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                            <span class="text-xs font-bold text-blue-800">CAJAS</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer bg-white px-3 py-1 rounded shadow-sm border border-blue-100 hover:bg-blue-50 transition">
+                            <input type="radio" name="packType" value="estiba" onchange="updatePackMode()" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                            <span class="text-xs font-bold text-blue-800">ESTIBAS</span>
+                        </label>
+                    </div>
+
+                    <label class="block text-xs font-bold text-blue-800 uppercase text-center mb-2" id="qtyLabel">Total Cajas</label>
+                    <div class="flex items-center justify-center gap-4 mb-3">
+                        <button onclick="modBox(-1)" class="w-8 h-8 rounded bg-white text-blue-600 font-bold shadow hover:bg-blue-100 transition">-</button>
+                        <input type="number" id="boxQty" value="1" min="1" class="w-16 text-center text-3xl font-bold bg-transparent border-none outline-none text-blue-900" onchange="updatePackMode()">
+                        <button onclick="modBox(1)" class="w-8 h-8 rounded bg-white text-blue-600 font-bold shadow hover:bg-blue-100 transition">+</button>
+                    </div>
+
+                    <!-- AQUÍ ESTABA EL ERROR: Faltaba el contenedor dinámico en V21 -->
+                    <!-- CONTENEDOR DINÁMICO PARA ESTIBAS (V22 FIXED) -->
+                    <div id="estibaInputsContainer" class="hidden flex-col gap-2 max-h-40 overflow-y-auto mt-2 pr-1 border-t border-blue-200 pt-2">
+                        <!-- Los campos de "Estiba 1", "Estiba 2" se inyectarán aquí por JS -->
+                    </div>
+                </div>
+                
+                <button onclick="printLabels()" id="printBtn" class="w-full bg-gray-800 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 opacity-50 pointer-events-none transition-all">IMPRIMIR</button>
+            </div>
+        </div>
+
+        <!-- PREVIEW -->
+        <div class="flex-1 bg-gray-200 flex items-center justify-center p-8 relative">
+            <div id="previewArea" class="transition-transform hover:scale-[1.02] duration-300 shadow-2xl">
+                <div class="label-container bg-white">
+                    <div class="info-section">
+                        <div class="data-row"><div class="field-label">CLIENTE:</div><div class="field-value huge" id="lbl-client">---</div></div>
+                        <div class="data-row"><div class="field-label">DIRECCIÓN:</div><div class="field-value address" id="lbl-address">---</div></div>
+                        <div class="location-row">
+                            <div class="loc-col border-r" style="width: 35%;"><div class="field-label">CIUDAD:</div><div class="field-value" id="lbl-city">---</div></div>
+                            <div class="loc-col border-r" style="width: 35%;"><div class="field-label">DEPTO:</div><div class="field-value" id="lbl-depto">---</div></div>
+                            <div class="loc-col" style="width: 30%;"><div class="field-label">TEL:</div><div class="field-value" id="lbl-phone">---</div></div>
+                        </div>
+                    </div>
+                    <div class="orders-row">
+                        <div class="orders-content"><div class="field-label">PEDIDOS ASOCIADOS:</div><div class="orders-value" id="lbl-orders">---</div></div>
+                        <div class="text-center">
+                            <div class="field-label" style="margin-bottom: 2px;" id="lbl-type-text">CAJA</div>
+                            <div class="box-indicator"><span id="lbl-curr">1</span>/<span id="lbl-total">1</span></div>
+                            <!-- PREVIEW CAJAS INTERNAS -->
+                            <div id="lbl-internal-box" class="hidden mt-1 text-sm font-black border-t-2 border-black pt-1">
+                                # CAJAS: <span id="lbl-internal-val">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="footer-zone">
+                        <div class="barcode-area"><svg id="bcPreview"></svg><div class="barcode-text" id="lbl-id">---</div></div>
+                        <div class="logos-area"><img src="BRAKEPAKlogo.png" class="logo-img" onerror="this.style.display='none'"><img src="LOGIMAT PNG.png" class="logo-img" onerror="this.style.display='none'" style="margin-top: 2mm;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="finalPrintQueue" style="display:none;"></div>
+    
+    <script src="js/script_index.js"></script>
+</body>
+</html>

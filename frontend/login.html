@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRAKEPAK - Acceso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&family=Roboto:wght@900&display=swap" rel="stylesheet">
+    <script src="js/api.js"></script>
+</head>
+<body class="min-h-screen bg-gray-900 flex items-center justify-center">
+
+    <div class="bg-white rounded-2xl shadow-2xl w-80 p-8 text-center">
+
+        <div class="mb-2 text-red-700 font-black text-2xl tracking-widest">BRAKEPAK</div>
+        <div class="text-gray-400 text-xs mb-6 font-mono">LOGIMAT · SISTEMA DE BODEGA</div>
+
+        <div class="text-left mb-4">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Cédula</label>
+            <input
+                id="inputCedula"
+                type="text"
+                inputmode="numeric"
+                class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-lg font-bold text-gray-800 focus:border-red-600 focus:ring-4 focus:ring-red-50 outline-none transition"
+                placeholder="Ej: 1013678677"
+                onkeypress="handleEnter(event)"
+            >
+        </div>
+
+        <div class="text-left mb-6">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Contraseña</label>
+            <input
+                id="inputPassword"
+                type="password"
+                class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-lg font-bold text-gray-800 focus:border-red-600 focus:ring-4 focus:ring-red-50 outline-none transition"
+                placeholder="••••••••"
+                onkeypress="handleEnter(event)"
+            >
+        </div>
+
+        <p id="loginError" class="text-red-500 text-xs mb-3 hidden">Cédula o contraseña incorrectos</p>
+
+        <button
+            id="btnLogin"
+            onclick="doLogin()"
+            class="w-full bg-red-700 text-white font-bold py-3 rounded-lg hover:bg-red-800 transition text-sm tracking-widest"
+        >
+            ENTRAR
+        </button>
+
+        <div class="text-gray-400 text-[10px] mt-6 font-mono">Powered and Designed By Laura Peláez for Logimat</div>
+    </div>
+
+    <script>
+        // Si ya tiene sesión válida, redirigir según rol
+        window.onload = () => {
+            if (api.isLoggedIn()) redirectByRole(api.getUser().rol);
+            document.getElementById('inputCedula').focus();
+        };
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') doLogin();
+        }
+
+        async function doLogin() {
+            const cedula   = document.getElementById('inputCedula').value.trim();
+            const password = document.getElementById('inputPassword').value;
+            const btn      = document.getElementById('btnLogin');
+            const errEl    = document.getElementById('loginError');
+
+            if (!cedula || !password) return;
+
+            btn.disabled = true;
+            btn.textContent = "VERIFICANDO...";
+            errEl.classList.add('hidden');
+
+            try {
+                const data = await api.login(cedula, password);
+                redirectByRole(data.rol);
+            } catch (err) {
+                errEl.textContent = err.message || "Cédula o contraseña incorrectos";
+                errEl.classList.remove('hidden');
+                document.getElementById('inputPassword').value = '';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "ENTRAR";
+            }
+        }
+
+        function redirectByRole(rol) {
+            if (rol === 'admin' || rol === 'supervisor') {
+                window.location.href = '/dashboard.html';
+            } else {
+                window.location.href = '/menu.html';
+            }
+        }
+    </script>
+</body>
+</html>

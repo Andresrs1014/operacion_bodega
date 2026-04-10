@@ -1,0 +1,133 @@
+body {
+    font-family: 'Roboto Condensed', sans-serif;
+}
+
+.font-gotham {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    letter-spacing: -1px;
+}
+
+.scan-input:focus {
+    outline: none;
+    border-color: #dc2626;
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.2);
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Colores */
+.text-brand-red { color: #D32F2F; }
+.bg-brand-red { background-color: #D32F2F; }
+.border-brand-red { border-color: #D32F2F; }
+
+/* Estilos Rótulo Pantalla - GRANDE */
+.label-card {
+    border: 3px solid #000;
+    background: white;
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+}
+.label-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    border-bottom: 2px solid #000;
+}
+.label-row {
+    display: contents;
+}
+.label-key {
+    background: #f3f4f6;
+    padding: 8px 15px;
+    font-weight: 900;
+    border-bottom: 2px solid #000;
+    border-right: 2px solid #000;
+    text-align: right;
+    text-transform: uppercase;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    color: #000;
+}
+.label-val {
+    padding: 8px 15px;
+    border-bottom: 2px solid #000;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    font-size: 1.4rem;
+}
+
+.big-order {
+    font-size: 4.5rem;
+    line-height: 1;
+    font-weight: 900;
+    color: #000;
+}
+
+.label-header {
+    background: white;
+    padding: 15px;
+    border-bottom: 3px solid #000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.powered-by {
+    text-align: center;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-top: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* IMPRESIÓN */
+@media print {
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
+    #print-area {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+    }
+    .label-card {
+        margin-bottom: 30px;
+        border: 3px solid #000;
+    }
+    .label-key {
+        background: transparent !important;
+        font-size: 12pt !important;
+    }
+    .label-val {
+        font-size: 16pt !important;
+    }
+    .big-order {
+        font-size: 40pt !important;
+    }
+    .print\:hidden {
+        display: none !important;
+    }
+    .obs-box {
+        font-size: 14pt !important;
+    }
+    .powered-by {
+        visibility: visible;
+        position: fixed;
+        bottom: 5px;
+        width: 100%;
+        text-align: center;
+        font-size: 8pt;
+        color: #000;
+    }
+}

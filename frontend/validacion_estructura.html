@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOGIMAT - Validación V5.10</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fuentes -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;700&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+    
+    <!-- Librerías -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="css/style_validacion.css" />
+    <script src="js/api.js"></script>
+</head>
+<body class="bg-white text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- HEADER -->
+    <header class="bg-white text-slate-800 p-3 shadow-md flex justify-between items-center z-20 border-b-4 border-brand-red print:hidden">
+        <div class="flex items-center gap-3">
+            <div class="text-3xl tracking-tighter flex items-center font-gotham text-slate-900">
+                L<i class="fa-solid fa-arrows-spin text-brand-red mx-1 text-2xl"></i>GIMAT
+            </div>
+        </div>
+        <div id="header-user-info" class="hidden flex items-center gap-3 bg-slate-100 px-4 py-1 rounded-full border border-slate-300">
+            <div class="text-right leading-tight">
+                <p id="display-user-name" class="font-bold text-xs text-brand-red uppercase"></p>
+                <p id="display-role" class="text-[9px] text-slate-500 font-bold">USUARIO</p>
+            </div>
+            <button onclick="logout()" class="text-slate-400 hover:text-brand-red transition-colors"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-3 relative bg-slate-50 print:bg-white print:p-0">
+        
+        <!-- VISTA 0: PIN -->
+        <div id="view-pin" class="flex items-center justify-center h-full fade-in print:hidden">
+            <div class="bg-white p-10 rounded-2xl shadow-2xl w-96 text-center border-t-8 border-brand-red">
+                <div class="mb-6 text-6xl text-brand-red"><i class="fa-solid fa-user-lock"></i></div>
+                <h2 class="text-3xl font-bold mb-2 text-slate-800">ACCESO RESTRINGIDO</h2>
+                <input type="password" id="input-pin" class="w-full text-center text-4xl font-bold p-3 border-b-4 border-slate-200 focus:border-brand-red outline-none mb-8 tracking-[15px]" maxlength="4" placeholder="••••">
+                <button onclick="checkPin()" class="w-full bg-slate-900 text-white font-bold py-4 rounded hover:bg-slate-800">ENTRAR</button>
+                <div class="powered-by mt-8">Powered and Designed by Laura Peláez for Logimat</div>
+            </div>
+        </div>
+
+        <!-- VISTA 1: MENÚ -->
+        <div id="view-menu" class="hidden h-full flex flex-col items-center justify-center fade-in print:hidden">
+            <div class="flex gap-8">
+                <div onclick="selectRole('picking')" class="bg-white p-8 rounded-2xl shadow-xl w-72 text-center cursor-pointer hover:scale-105 transition-all border-t-8 border-slate-600 group">
+                    <div class="text-7xl text-slate-600 mb-6"><i class="fa-solid fa-dolly"></i></div>
+                    <h2 class="text-3xl font-black text-slate-700">ALISTAR</h2>
+                </div>
+                <div onclick="selectRole('validation')" class="bg-white p-8 rounded-2xl shadow-xl w-72 text-center cursor-pointer hover:scale-105 transition-all border-t-8 border-brand-red group">
+                    <div class="text-7xl text-brand-red mb-6"><i class="fa-solid fa-clipboard-check"></i></div>
+                    <h2 class="text-3xl font-black text-brand-red">VALIDAR</h2>
+                </div>
+            </div>
+            <div class="powered-by mt-12">Powered and Designed by Laura Peláez for Logimat</div>
+        </div>
+
+        <!-- VISTA 2: PICKING -->
+        <div id="view-picking" class="hidden max-w-md mx-auto mt-10 fade-in print:hidden">
+            <div class="bg-white p-8 rounded-xl shadow-xl border-t-8 border-slate-600">
+                <h2 class="text-2xl font-bold mb-6 text-center text-slate-700 border-b pb-4">REGISTRO ALISTAMIENTO</h2>
+                <div id="picking-step-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Cédula</label>
+                    <input type="number" id="picker-id-input" class="w-full p-3 border rounded mb-4 font-bold text-lg">
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Pedido</label>
+                    <input type="text" id="picking-order-input" class="w-full p-3 border rounded mb-6 font-bold text-2xl uppercase text-center">
+                    <button onclick="startPickingTimer()" class="w-full bg-slate-800 text-white font-bold py-4 rounded">INICIAR</button>
+                </div>
+                <div id="picking-step-2" class="hidden text-center">
+                    <div class="bg-green-50 p-6 rounded border mb-4">
+                        <h3 id="display-picking-order" class="text-5xl font-black text-slate-800">---</h3>
+                        <p id="display-picker-name" class="text-brand-red font-bold">---</p>
+                        <p class="text-xs mt-2">Iniciado: <span id="picking-start-time">--:--</span></p>
+                    </div>
+                    <div class="flex gap-2">
+                         <button onclick="cancelPicking()" class="w-1/2 bg-red-100 text-red-600 border border-red-200 font-bold py-4 rounded hover:bg-red-200 text-xs">CANCELAR / CORREGIR</button>
+                         <button onclick="endPickingTimer()" class="w-1/2 bg-green-600 text-white font-bold py-4 rounded hover:bg-green-700 text-xs">FINALIZAR</button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="resetView('menu')" class="mt-4 w-full text-center text-slate-400 font-bold">VOLVER</button>
+            <div class="powered-by mt-4">Powered and Designed by Laura Peláez for Logimat</div>
+        </div>
+
+        <!-- VISTA 3: LOGIN VALIDADOR -->
+        <div id="view-login-validator" class="hidden max-w-md mx-auto mt-16 bg-white rounded-2xl shadow-2xl p-10 fade-in border-t-8 border-brand-red print:hidden">
+            <h2 class="text-2xl font-black text-center mb-2 text-slate-800">VALIDACIÓN</h2>
+            <p class="text-center text-brand-red font-bold text-sm mb-6">Validador, ingrese su número de cédula</p>
+            <input type="number" id="login-id" class="w-full text-center text-3xl font-bold p-4 border rounded mb-6" placeholder="CÉDULA" onkeypress="handleLoginEnter(event)">
+            <button onclick="attemptLogin()" class="w-full bg-brand-red text-white font-bold py-4 rounded shadow hover:bg-red-700">ACCEDER</button>
+            <div class="powered-by mt-6">Powered and Designed by Laura Peláez for Logimat</div>
+        </div>
+
+        <!-- VISTA 4: DASHBOARD VALIDACIÓN -->
+        <div id="view-upload" class="hidden max-w-4xl mx-auto mt-6 fade-in print:hidden">
+            <div class="bg-white p-8 rounded-xl shadow-xl border border-slate-200">
+                <div class="flex justify-between mb-6 border-b pb-4">
+                    <h2 class="text-xl font-bold flex items-center gap-2"><i class="fa-solid fa-database text-brand-red"></i> GESTIÓN DATOS</h2>
+                    <button onclick="resetView('menu')" class="text-xs bg-slate-100 px-3 py-1 rounded font-bold">MENÚ</button>
+                </div>
+
+                <!-- Estado Archivo -->
+                <div id="file-status-panel" class="hidden mb-6 bg-green-50 border border-green-200 p-4 rounded flex justify-between items-center">
+                    <div>
+                        <p class="text-green-800 font-bold text-sm uppercase">Archivo del día cargado</p>
+                        <p id="current-file-name" class="text-xs text-green-600">Listo para validar</p>
+                    </div>
+                    <button onclick="resetExcelData()" class="bg-white text-red-600 px-3 py-1 rounded border border-red-200 text-xs font-bold">CAMBIAR ARCHIVO</button>
+                </div>
+
+                <!-- Zona Carga -->
+                <div id="upload-zone">
+                    <div class="flex items-center gap-3 mb-4 bg-blue-50 p-3 rounded text-xs text-blue-800">
+                        <div id="sync-spinner" class="animate-spin h-4 w-4 border-2 border-blue-800 rounded-full border-t-transparent"></div>
+                        <span id="sync-text">Sincronizando Unidades de Empaque (Google Sheets)...</span>
+                    </div>
+                    <div id="excel-dropzone" class="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center hover:bg-slate-50 cursor-pointer relative">
+                        <input type="file" id="file-upload" accept=".xlsx, .xls" class="absolute inset-0 opacity-0 cursor-pointer" onchange="initExcelUpload(this)">
+                        <i class="fa-solid fa-file-excel text-5xl text-slate-300 mb-3"></i>
+                        <h3 class="font-bold text-lg text-slate-600">Cargar Excel de Pedidos</h3>
+                    </div>
+                </div>
+
+                <!-- Input Pedido -->
+                <div id="validation-start-panel" class="hidden mt-8 border-t pt-8">
+                    <label class="block text-xs font-bold text-brand-red mb-2 text-center uppercase tracking-widest">Número de Pedido a Validar</label>
+                    <input type="text" id="input-order-id-val" class="w-full text-center text-4xl font-black uppercase border-2 border-slate-200 rounded p-3 focus:border-brand-red outline-none mb-6" placeholder="EJ: 43140">
+                    <button onclick="checkPickerAndStart()" class="w-full bg-brand-red text-white font-bold py-4 rounded shadow-lg text-lg">VALIDAR PEDIDO</button>
+                </div>
+                <div class="powered-by mt-4">Powered and Designed by Laura Peláez for Logimat</div>
+            </div>
+        </div>
+
+        <!-- MODAL SELECCIÓN ALISTADOR -->
+        <div id="modal-picker-select" class="fixed inset-0 bg-slate-900 bg-opacity-90 hidden items-center justify-center z-50 print:hidden">
+            <div class="bg-white p-8 rounded-lg w-96 text-center">
+                <h3 class="font-bold text-lg mb-2 text-slate-800">ALISTADOR NO ENCONTRADO</h3>
+                <p class="text-xs text-slate-500 mb-4">Seleccione quién alistó este pedido físicamente:</p>
+                <select id="manual-picker-select" class="w-full p-3 border rounded mb-4 bg-slate-50 font-bold text-sm"></select>
+                <button onclick="confirmManualPicker()" class="w-full bg-slate-800 text-white font-bold py-3 rounded">CONFIRMAR E INICIAR</button>
+            </div>
+        </div>
+
+        <!-- VISTA 5: VALIDACIÓN -->
+        <div id="view-validate" class="hidden h-full flex flex-col print:hidden">
+            <div class="bg-white px-4 py-2 shadow-sm mb-3 flex justify-between items-center border-l-4 border-brand-red text-xs">
+                <div class="flex gap-6">
+                    <div><span class="text-slate-400 font-bold">PEDIDO</span><br><span id="info-order-id" class="font-black text-xl">---</span></div>
+                    <div><span class="text-slate-400 font-bold">CLIENTE</span><br><span id="info-client" class="font-bold text-brand-red truncate max-w-[200px] inline-block">---</span></div>
+                    <div><span class="text-slate-400 font-bold">ALISTÓ</span><br><span id="info-picker" class="font-bold">---</span></div>
+                </div>
+                <div class="text-right">
+                    <span class="text-slate-400 font-bold">INICIO VALIDACIÓN</span><br><span id="info-start-time" class="font-mono font-bold">--:--</span>
+                </div>
+            </div>
+
+            <div class="flex-1 min-h-0 grid grid-cols-12 gap-4 px-3 pb-3">
+                
+                <!-- ZONA IZQUIERDA: ESCANEO (4 Columnas) -->
+                <div class="col-span-4 flex flex-col bg-white rounded shadow-md border border-slate-300">
+                    <div class="bg-slate-800 p-6 text-center rounded-t">
+                        <p class="text-slate-400 text-xs font-bold mb-2 uppercase tracking-widest">Escanear Referencia</p>
+                        <input type="text" id="scan-input" class="scan-input w-full text-center font-black text-4xl py-3 rounded uppercase" placeholder="..." autocomplete="off">
+                    </div>
+                    <div id="scan-log" class="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50 text-sm font-mono border-t border-slate-200"></div>
+                </div>
+
+                <!-- ZONA DERECHA: DETALLE (8 Columnas) -->
+                <div class="col-span-8 flex flex-col bg-white rounded shadow-md relative border border-slate-300">
+                    
+                    <!-- HEADER + BOTÓN FINALIZAR (ARRIBA) -->
+                    <div class="bg-slate-100 p-3 px-4 flex justify-between items-center border-b-2 border-slate-200">
+                        <div class="flex items-center gap-4">
+                            <span class="font-black text-slate-700 text-lg">DETALLE DEL PEDIDO</span>
+                            <span class="bg-brand-red text-white px-3 py-1 rounded font-mono font-bold text-lg" id="progress-text">0%</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="text-right leading-tight">
+                                <div class="text-xs font-bold text-slate-500 uppercase">Diferencias</div>
+                                <div class="text-2xl font-black text-brand-red" id="count-error">0</div>
+                            </div>
+                            <button onclick="tryFinishValidation()" class="bg-slate-900 text-white font-bold py-3 px-6 rounded shadow hover:bg-black transition-colors uppercase tracking-widest text-sm">
+                                <i class="fa-solid fa-flag-checkered mr-2"></i> FINALIZAR
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- OBSERVACIONES (ARRIBA) -->
+                    <div class="p-3 bg-slate-50 border-b border-slate-200">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Observaciones del Validador:</label>
+                        <textarea id="input-observations" rows="2" class="w-full text-sm p-2 border rounded uppercase resize-none outline-none focus:border-brand-red bg-white" placeholder="Escriba aquí si hay novedades..."></textarea>
+                    </div>
+
+                    <!-- ENCABEZADOS TABLA -->
+                    <div class="grid grid-cols-12 bg-slate-200 text-xs font-bold text-slate-700 py-3 text-center uppercase border-b-2 border-slate-300">
+                        <div class="col-span-4 text-left pl-4">REFERENCIA</div>
+                        <div class="col-span-3">UND EMPAQUE</div>
+                        <div class="col-span-2">SOLICITADO</div>
+                        <div class="col-span-2">PISTOLEADO</div>
+                        <div class="col-span-1">EST</div>
+                    </div>
+
+                    <!-- CUERPO TABLA (FUENTE AUMENTADA) -->
+                    <div id="order-table-body" class="flex-1 overflow-y-auto p-0 bg-white"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 6: IMPRESIÓN (DOBLE RÓTULO) -->
+        <div id="view-label" class="hidden h-full overflow-y-auto bg-slate-100 print:bg-white">
+            <div class="max-w-3xl mx-auto mt-4 print:m-0 print:w-full">
+                <!-- Contenedor de Impresión -->
+                <div id="print-area">
+                    <!-- COPIA 1 (OT) -->
+                    <div id="label-copy-1" class="label-card shadow-xl"></div>
+                    
+                    <!-- COPIA 2 (MERCANCÍA) -->
+                    <div id="label-copy-2" class="label-card shadow-xl mt-8 print:mt-10 border-t-4 border-dashed border-slate-300 print:border-none"></div>
+                    
+                    <div class="powered-by print:block hidden">Powered and Designed by Laura Peláez for Logimat</div>
+                </div>
+
+                <!-- Botones -->
+                <div class="p-6 flex gap-4 justify-end print:hidden fixed bottom-0 right-0 bg-white w-full border-t shadow-lg items-center">
+                    <button onclick="returnToValidationStart()" class="bg-white border border-slate-300 text-slate-600 px-6 py-3 rounded font-bold hover:bg-slate-100 uppercase text-xs">Siguiente</button>
+                    
+                    <!-- Botones diferenciados para correo -->
+                    <div class="flex gap-2">
+                        <button onclick="sendReportEmail('gmail')" class="bg-red-600 text-white px-4 py-3 rounded font-bold hover:bg-red-700 flex items-center gap-2 uppercase text-xs shadow-lg border-b-4 border-red-800 active:border-none active:mt-1">
+                            <i class="fa-brands fa-google"></i> Correo (Gmail)
+                        </button>
+                        <button onclick="sendReportEmail('mailto')" class="bg-slate-500 text-white px-4 py-3 rounded font-bold hover:bg-slate-600 flex items-center gap-2 uppercase text-xs">
+                            <i class="fa-solid fa-envelope"></i> App Local
+                        </button>
+                    </div>
+
+                    <button onclick="window.print()" class="bg-slate-900 text-white px-8 py-3 rounded font-bold hover:bg-black uppercase text-xs"><i class="fa-solid fa-print"></i> Imprimir</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL SUPERVISOR -->
+    <div id="modal-supervisor" class="fixed inset-0 bg-slate-900 bg-opacity-90 hidden items-center justify-center z-50 print:hidden">
+        <div class="bg-white p-8 rounded-lg w-96 text-center border-t-8 border-brand-red">
+            <div class="text-brand-red text-5xl mb-4"><i class="fa-solid fa-shield-halved"></i></div>
+            <h3 id="modal-super-title" class="font-black text-xl mb-1 text-slate-800 uppercase">Autorización Requerida</h3>
+            <p class="text-slate-500 text-xs mb-4" id="modal-super-msg">Se requiere credencial para continuar</p>
+            
+            <div id="supervisor-auth-section">
+                <input type="password" id="supervisor-code" class="w-full text-center border-b-4 border-slate-200 p-2 text-xl tracking-[4px] mb-4 font-bold focus:border-brand-red outline-none" placeholder="CÓDIGO">
+            </div>
+            
+            <label class="block text-left text-[10px] font-bold text-slate-400 uppercase mb-1">Causa de la Novedad:</label>
+            <select id="supervisor-reason" class="w-full border border-slate-300 rounded p-2 mb-6 text-xs font-bold text-slate-700">
+                <option value="">-- SELECCIONE CAUSA --</option>
+                <option value="PISTOLEO DE MAS">PISTOLEO DE MAS</option>
+                <option value="TOMO EL QR MAS NO EL CODEBAR">TOMO EL QR MAS NO EL CODEBAR</option>
+                <option value="ALISTAMIENTO DE MAS">ALISTAMIENTO DE MAS</option>
+                <option value="ALISTAMIENTO DE MENOS">ALISTAMIENTO DE MENOS</option>
+                <option value="ALISTAMIENTO DE REF NO SOLICITADA">ALISTAMIENTO DE REF NO SOLICITADA</option>
+                <option value="ERROR DE ETIQUETA ORIGINAL">ERROR DE ETIQUETA ORIGINAL</option>
+                <option value="OTRO">OTRO</option>
+            </select>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="closeSupervisorModal()" class="bg-slate-100 py-3 rounded font-bold text-sm text-slate-600">CANCELAR</button>
+                <button onclick="checkSupervisorCode()" class="bg-brand-red text-white py-3 rounded font-bold text-sm">AUTORIZAR</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script_validacion.js"></script>
+</body>
+</html>
