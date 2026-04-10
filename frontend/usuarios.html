@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRAKEPAK · Usuarios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/api.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f1f5f9; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 8px rgba(0,0,0,0.07); padding: 24px; }
+        .badge-admin    { background: #fee2e2; color: #991b1b; }
+        .badge-supervisor { background: #dbeafe; color: #1e40af; }
+        .badge-operario { background: #dcfce7; color: #166534; }
+        .badge-inactivo { background: #f1f5f9; color: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-red-700 text-white px-6 py-3 flex justify-between items-center shadow-lg">
+    <div class="flex items-center gap-4">
+        <span class="font-black text-xl tracking-widest">BRAKEPAK</span>
+        <span class="text-red-200 text-xs font-mono border-l border-red-500 pl-4">GESTIÓN DE USUARIOS</span>
+    </div>
+    <div class="flex items-center gap-4">
+        <span id="headerUser" class="text-sm font-bold text-red-100"></span>
+        <a href="dashboard.html" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">DASHBOARD</a>
+        <button onclick="api.logout()" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">SALIR</button>
+    </div>
+</header>
+
+<main class="p-6 max-w-5xl mx-auto space-y-6">
+
+    <!-- BOTÓN CREAR -->
+    <div class="flex justify-between items-center">
+        <h1 class="text-lg font-black text-slate-700 tracking-wide">USUARIOS DEL SISTEMA</h1>
+        <button onclick="abrirModal()" class="bg-red-700 hover:bg-red-800 text-white text-sm font-bold px-5 py-2 rounded-lg transition">
+            + NUEVO USUARIO
+        </button>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b-2 border-slate-100">
+                        <th class="text-left py-2 px-3 text-xs font-bold text-slate-400 uppercase">Nombre</th>
+                        <th class="text-left py-2 px-3 text-xs font-bold text-slate-400 uppercase">Cédula</th>
+                        <th class="text-center py-2 px-3 text-xs font-bold text-slate-400 uppercase">Rol</th>
+                        <th class="text-center py-2 px-3 text-xs font-bold text-slate-400 uppercase">Estado</th>
+                        <th class="text-center py-2 px-3 text-xs font-bold text-slate-400 uppercase">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-usuarios">
+                    <tr><td colspan="5" class="text-center text-slate-400 py-8">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- MODAL CREAR / EDITAR -->
+<div id="modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 mx-4">
+        <h2 id="modal-titulo" class="text-lg font-black text-slate-700 mb-6">NUEVO USUARIO</h2>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre completo</label>
+                <input id="f-nombre" type="text" placeholder="Ej: CARLOS RODRIGUEZ"
+                    class="w-full border-2 border-slate-200 rounded-lg px-4 py-2.5 text-sm font-bold text-slate-800 focus:border-red-600 outline-none transition uppercase">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula</label>
+                <input id="f-cedula" type="text" inputmode="numeric" placeholder="Ej: 1013678677"
+                    class="w-full border-2 border-slate-200 rounded-lg px-4 py-2.5 text-sm font-bold text-slate-800 focus:border-red-600 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña</label>
+                <input id="f-password" type="password" placeholder="Mínimo 6 caracteres"
+                    class="w-full border-2 border-slate-200 rounded-lg px-4 py-2.5 text-sm font-bold text-slate-800 focus:border-red-600 outline-none transition">
+                <p id="f-password-hint" class="text-xs text-slate-400 mt-1 hidden">Dejar vacío para no cambiar la contraseña</p>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Rol</label>
+                <select id="f-rol"
+                    class="w-full border-2 border-slate-200 rounded-lg px-4 py-2.5 text-sm font-bold text-slate-800 focus:border-red-600 outline-none transition">
+                    <option value="operario">Operario</option>
+                    <option value="supervisor">Supervisor</option>
+                    <option value="admin">Administrador</option>
+                </select>
+            </div>
+        </div>
+
+        <p id="modal-error" class="text-red-500 text-xs mt-4 hidden"></p>
+
+        <div class="flex gap-3 mt-6">
+            <button onclick="cerrarModal()" class="flex-1 border-2 border-slate-200 text-slate-600 font-bold py-2.5 rounded-lg hover:bg-slate-50 transition text-sm">
+                CANCELAR
+            </button>
+            <button id="btn-guardar" onclick="guardar()" class="flex-1 bg-red-700 text-white font-bold py-2.5 rounded-lg hover:bg-red-800 transition text-sm">
+                GUARDAR
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let usuarioEditandoId = null;
+
+window.onload = () => {
+    if (!api.isLoggedIn()) { window.location.href = '/login.html'; return; }
+    const user = api.getUser();
+    if (user.rol !== 'admin') { window.location.href = '/dashboard.html'; return; }
+    document.getElementById('headerUser').textContent = user.nombre;
+    cargarUsuarios();
+};
+
+async function cargarUsuarios() {
+    try {
+        const usuarios = await api.request('GET', '/usuarios/');
+        renderTabla(usuarios);
+    } catch (e) {
+        document.getElementById('tabla-usuarios').innerHTML =
+            '<tr><td colspan="5" class="text-center text-red-400 py-8">Error cargando usuarios</td></tr>';
+    }
+}
+
+function badgeRol(rol) {
+    const clases = {
+        admin: 'badge-admin',
+        supervisor: 'badge-supervisor',
+        operario: 'badge-operario',
+    };
+    return `<span class="${clases[rol] || ''} px-3 py-1 rounded-full text-xs font-bold uppercase">${rol}</span>`;
+}
+
+function renderTabla(usuarios) {
+    const el = document.getElementById('tabla-usuarios');
+    if (!usuarios.length) {
+        el.innerHTML = '<tr><td colspan="5" class="text-center text-slate-400 py-8">Sin usuarios</td></tr>';
+        return;
+    }
+    el.innerHTML = usuarios.map(u => `
+        <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
+            <td class="py-3 px-3 font-bold text-slate-800">${u.nombre}</td>
+            <td class="py-3 px-3 text-slate-500 font-mono">${u.cedula}</td>
+            <td class="py-3 px-3 text-center">${badgeRol(u.rol)}</td>
+            <td class="py-3 px-3 text-center">
+                ${u.activo
+                    ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">ACTIVO</span>'
+                    : '<span class="badge-inactivo px-3 py-1 rounded-full text-xs font-bold">INACTIVO</span>'}
+            </td>
+            <td class="py-3 px-3 text-center">
+                <div class="flex gap-2 justify-center">
+                    <button onclick="abrirEditar(${u.id}, '${u.nombre}', '${u.cedula}', '${u.rol}')"
+                        class="text-xs font-bold text-blue-600 hover:text-blue-800 transition">EDITAR</button>
+                    ${u.activo
+                        ? `<button onclick="desactivar(${u.id})"
+                            class="text-xs font-bold text-red-500 hover:text-red-700 transition">DESACTIVAR</button>`
+                        : `<button onclick="activar(${u.id})"
+                            class="text-xs font-bold text-green-600 hover:text-green-800 transition">ACTIVAR</button>`}
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function abrirModal() {
+    usuarioEditandoId = null;
+    document.getElementById('modal-titulo').textContent = 'NUEVO USUARIO';
+    document.getElementById('f-nombre').value = '';
+    document.getElementById('f-cedula').value = '';
+    document.getElementById('f-password').value = '';
+    document.getElementById('f-cedula').disabled = false;
+    document.getElementById('f-password-hint').classList.add('hidden');
+    document.getElementById('f-rol').value = 'operario';
+    document.getElementById('modal-error').classList.add('hidden');
+    document.getElementById('modal').classList.remove('hidden');
+}
+
+function abrirEditar(id, nombre, cedula, rol) {
+    usuarioEditandoId = id;
+    document.getElementById('modal-titulo').textContent = 'EDITAR USUARIO';
+    document.getElementById('f-nombre').value = nombre;
+    document.getElementById('f-cedula').value = cedula;
+    document.getElementById('f-cedula').disabled = true;
+    document.getElementById('f-password').value = '';
+    document.getElementById('f-password-hint').classList.remove('hidden');
+    document.getElementById('f-rol').value = rol;
+    document.getElementById('modal-error').classList.add('hidden');
+    document.getElementById('modal').classList.remove('hidden');
+}
+
+function cerrarModal() {
+    document.getElementById('modal').classList.add('hidden');
+}
+
+async function guardar() {
+    const nombre   = document.getElementById('f-nombre').value.trim().toUpperCase();
+    const cedula   = document.getElementById('f-cedula').value.trim();
+    const password = document.getElementById('f-password').value;
+    const rol      = document.getElementById('f-rol').value;
+    const errEl    = document.getElementById('modal-error');
+    const btn      = document.getElementById('btn-guardar');
+
+    if (!nombre || (!usuarioEditandoId && !cedula)) {
+        errEl.textContent = 'Nombre y cédula son obligatorios';
+        errEl.classList.remove('hidden');
+        return;
+    }
+    if (!usuarioEditandoId && !password) {
+        errEl.textContent = 'La contraseña es obligatoria para nuevos usuarios';
+        errEl.classList.remove('hidden');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'GUARDANDO...';
+    errEl.classList.add('hidden');
+
+    try {
+        if (usuarioEditandoId) {
+            const body = { nombre, rol };
+            if (password) body.password = password;
+            await api.request('PATCH', `/usuarios/${usuarioEditandoId}`, body);
+        } else {
+            await api.request('POST', '/usuarios/', { nombre, cedula, password, rol });
+        }
+        cerrarModal();
+        await cargarUsuarios();
+    } catch (e) {
+        errEl.textContent = e.message || 'Error al guardar';
+        errEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'GUARDAR';
+    }
+}
+
+async function desactivar(id) {
+    if (!confirm('¿Desactivar este usuario?')) return;
+    try {
+        await api.request('DELETE', `/usuarios/${id}`);
+        await cargarUsuarios();
+    } catch (e) {
+        alert(e.message || 'Error al desactivar');
+    }
+}
+
+async function activar(id) {
+    try {
+        await api.request('PATCH', `/usuarios/${id}`, { activo: true });
+        await cargarUsuarios();
+    } catch (e) {
+        alert(e.message || 'Error al activar');
+    }
+}
+</script>
+
+</body>
+</html>

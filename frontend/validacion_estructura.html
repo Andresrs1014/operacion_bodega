@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LOGIMAT - Validación V5.10</title>
+    <title>BRAKEPAK · Validación</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,18 +22,17 @@
 <body class="bg-white text-slate-800 h-screen flex flex-col overflow-hidden">
 
     <!-- HEADER -->
-    <header class="bg-white text-slate-800 p-3 shadow-md flex justify-between items-center z-20 border-b-4 border-brand-red print:hidden">
-        <div class="flex items-center gap-3">
-            <div class="text-3xl tracking-tighter flex items-center font-gotham text-slate-900">
-                L<i class="fa-solid fa-arrows-spin text-brand-red mx-1 text-2xl"></i>GIMAT
-            </div>
+    <header class="bg-red-700 text-white p-3 shadow-md flex justify-between items-center z-20 print:hidden">
+        <div class="flex items-center gap-4">
+            <span class="font-black text-xl tracking-widest">BRAKEPAK</span>
+            <span class="text-red-200 text-xs font-mono border-l border-red-500 pl-4">VALIDACIÓN · LOGIMAT</span>
         </div>
-        <div id="header-user-info" class="hidden flex items-center gap-3 bg-slate-100 px-4 py-1 rounded-full border border-slate-300">
-            <div class="text-right leading-tight">
-                <p id="display-user-name" class="font-bold text-xs text-brand-red uppercase"></p>
-                <p id="display-role" class="text-[9px] text-slate-500 font-bold">USUARIO</p>
+        <div class="flex items-center gap-3">
+            <div id="header-user-info" class="hidden items-center gap-3">
+                <p id="display-user-name" class="font-bold text-xs text-red-100 uppercase"></p>
             </div>
-            <button onclick="logout()" class="text-slate-400 hover:text-brand-red transition-colors"><i class="fa-solid fa-right-from-bracket"></i></button>
+            <a href="menu.html" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">MENÚ</a>
+            <button onclick="logout()" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">SALIR</button>
         </div>
     </header>
 

@@ -16,6 +16,7 @@
         </div>
         <div class="flex items-center gap-4">
             <span id="headerUser" class="text-sm font-bold"></span>
+            <a id="btn-dashboard" href="dashboard.html" class="hidden bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1 rounded transition">DASHBOARD</a>
             <button onclick="api.logout()" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1 rounded transition">
                 SALIR
             </button>
@@ -48,6 +49,9 @@
             }
             const user = api.getUser();
             document.getElementById('headerUser').textContent = user.nombre;
+            if (user.rol === 'admin' || user.rol === 'supervisor') {
+                document.getElementById('btn-dashboard').classList.remove('hidden');
+            }
         };
     </script>
 </body>
