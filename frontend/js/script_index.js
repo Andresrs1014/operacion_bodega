@@ -2,9 +2,6 @@
 // CONFIGURACIÓN Y VARIABLES GLOBALES
 // ==========================================
 
-// PIN de acceso para proteger el sistema
-const ACCESS_PIN = "2025";
-
 // Base de datos en memoria de pedidos cargados desde Excel
 let db = [];
 
@@ -54,47 +51,12 @@ function getDepto(city) {
  * - Configura el listener para el evento Enter en el campo de PIN
  */
 window.onload = () => {
-    checkLibraries();
-    updateNextID();
-    // Mostrar nombre del usuario logueado en el header
-    const user = api.getUser();
-    if (user) {
-        const headerEl = document.querySelector('header h1');
-        if (headerEl) headerEl.insertAdjacentHTML('afterend',
-            `<span class="text-red-200 text-xs font-mono ml-2">${user.nombre}</span>`
-        );
+    if (typeof XLSX === 'undefined') {
+        alert('⚠️ Sin conexión a internet. Las librerías no cargaron correctamente.');
     }
+    updateNextID();
 };
 
-/**
- * Verifica que las librerías externas necesarias estén cargadas
- * Específicamente comprueba la disponibilidad de XLSX (SheetJS) para lectura de Excel
- * Muestra un indicador visual del estado del sistema
- */
-function checkLibraries() {
-    const statusEl = document.getElementById('libraryStatus');
-    if (typeof XLSX === 'undefined') {
-        statusEl.textContent = "⚠️ ERROR: No hay internet para cargar librerías.";
-        statusEl.classList.add('text-red-500', 'font-bold');
-    } else {
-        statusEl.textContent = "✅ Sistema V22 Listo";
-        statusEl.classList.add('text-green-500');
-    }
-}
-
-/**
- * Valida el PIN de acceso ingresado por el usuario
- * Si es correcto, oculta la pantalla de login y permite acceder al sistema
- * Si es incorrecto, muestra un mensaje de error y limpia el campo
- */
-function checkPin() {
-    if (document.getElementById('pinInput').value === ACCESS_PIN) {
-        document.getElementById('loginOverlay').style.display = 'none';
-    } else {
-        document.getElementById('loginError').classList.remove('hidden');
-        document.getElementById('pinInput').value = '';
-    }
-}
 
 /**
  * Maneja la carga del archivo Excel seleccionado por el usuario

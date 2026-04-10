@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ls C:/operacion_bodega/frontend/*.html)"
+      "Bash(ls C:/operacion_bodega/frontend/*.html)",
+      "Read(//c/Users/andres.quintero/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/253ba686-ad48-4bc7-9fc4-67fa319b4aa3/6647d07b-5a3d-496c-94a9-1308967317ab/skills/xlsx/**)",
+      "Bash(python -c ':*)",
+      "Bash(pip install:*)"
     ]
   }
 }
