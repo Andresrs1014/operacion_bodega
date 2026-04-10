@@ -1342,15 +1342,21 @@ async function attemptLogin() {
     document.getElementById('view-login-validator').classList.add('hidden');
     document.getElementById('view-upload').classList.remove('hidden');
 
-    if (app.fullExcel && app.fullExcel.length > 0) showFileStatus(true);
-    else {
-        showFileStatus(false);
-        fetchMasterData();
-    }
+    showFileStatus(app.fullExcel && app.fullExcel.length > 0);
 }
 
 // ==========================================
 // SINCRONIZACIÓN DE DATOS MAESTROS
+// TODO (futuro): reemplazar la carga manual de Excel por sincronización automática
+// con Google Sheets publicado como CSV. La URL y la lógica de parseo ya estaban
+// implementadas en fetchMasterData() — se desactivó porque los proxies CORS
+// públicos (allorigins.win, corsproxy.io) son inestables en producción.
+// Alternativa recomendada: crear un endpoint en el backend que haga el fetch
+// server-side y exponga los datos como /api/referencias, eliminando la dependencia
+// de proxies externos.
+//
+// URL original de Sheets:
+// https://docs.google.com/spreadsheets/d/e/2PACX-1vSPQdfoNhLGDrjllSqgR_4lQxH0GmxQ02XHG9txUynTDQQXG6Vg8chO95cZQVlge0HctFCvgTIciBPS/pub?gid=1080426998&single=true&output=csv
 // ==========================================
 
 /**
@@ -1523,25 +1529,29 @@ function resetExcelData() {
  * Busca en el historial de alistamiento quién alistó el pedido
  * Si no encuentra registro, solicita selección manual del alistador
  */
-function checkPickerAndStart() {
+async function checkPickerAndStart() {
     const orderId = document.getElementById('input-order-id-val').value.trim().toUpperCase();
     if (!orderId) return alert("DIGITE PEDIDO");
 
-    // Buscar alistador
+    // Buscar alistador en historial local
     const history = JSON.parse(localStorage.getItem('brakepak_picking_history') || "[]");
-    const pickRecord = history.reverse().find(r => r.order === orderId);
+    const pickRecord = [...history].reverse().find(r => r.order === orderId);
 
     if (pickRecord) {
         app.picker = pickRecord.picker;
         startValidation(orderId);
     } else {
-        // Mostrar selección manual
+        // Mostrar selección manual usando la API
         const select = document.getElementById('manual-picker-select');
         select.innerHTML = '<option value="">-- SELECCIONE --</option>';
-        const emps = JSON.parse(localStorage.getItem('brakepak_employees'));
-        emps.sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
-            select.innerHTML += `<option value="${e.name}">${e.name}</option>`;
-        });
+        try {
+            const empleados = await api.getEmpleados();
+            empleados.forEach(e => {
+                select.innerHTML += `<option value="${e.nombre}">${e.nombre}</option>`;
+            });
+        } catch (err) {
+            select.innerHTML += '<option disabled>Error cargando empleados</option>';
+        }
         app.tempOrderId = orderId;
         document.getElementById('modal-picker-select').classList.remove('hidden');
         document.getElementById('modal-picker-select').classList.add('flex');
@@ -1976,16 +1986,19 @@ function sendReportEmail(service) {
  * Inicia el temporizador de alistamiento de un pedido
  * Registra quién está alistando y a qué hora comenzó
  */
-function startPickingTimer() {
-    const id = document.getElementById('picker-id-input').value;
+async function startPickingTimer() {
+    const id = document.getElementById('picker-id-input').value.trim();
     const order = document.getElementById('picking-order-input').value.trim().toUpperCase();
     if (!id || !order) return alert("Datos incompletos");
-    const emps = JSON.parse(localStorage.getItem('brakepak_employees'));
-    const emp = emps.find(e => e.id === id);
-    app.user = {
-        name: emp ? emp.name : "ID:" + id,
-        id: id
-    };
+
+    let empName = "ID:" + id;
+    try {
+        const empleados = await api.getEmpleados();
+        const emp = empleados.find(e => String(e.cedula) === String(id));
+        if (emp) empName = emp.nombre;
+    } catch (e) { /* sin conexión, usar ID */ }
+
+    app.user = { name: empName, id };
     app.orderId = order;
     app.pickingStartTime = new Date();
     document.getElementById('picking-step-1').classList.add('hidden');
