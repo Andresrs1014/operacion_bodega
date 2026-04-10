@@ -1294,10 +1294,11 @@ function checkPin() {
 function selectRole(role) {
     app.role = role;
     document.getElementById('view-menu').classList.add('hidden');
-    if (role === 'picking') document.getElementById('view-picking').classList.remove('hidden');
-    else {
-        document.getElementById('view-login-validator').classList.remove('hidden');
-        document.getElementById('login-id').focus();
+    if (role === 'picking') {
+        document.getElementById('view-picking').classList.remove('hidden');
+    } else {
+        // El usuario ya está autenticado via JWT — ir directo a la pantalla de carga
+        attemptLogin();
     }
 }
 
@@ -1314,28 +1315,17 @@ function handleLoginEnter(e) {
  * Luego muestra la pantalla de carga de Excel o intenta sincronizar datos
  */
 async function attemptLogin() {
-    // El usuario ya está autenticado via JWT desde login.html
-    // Esta función ahora carga empleados desde el backend para el selector de alistador
-    try {
-        const empleados = await api.getEmpleados();
-        // Poblar el selector de alistadores si existe en el HTML
-        const selectAlistador = document.getElementById('select-picker');
-        if (selectAlistador) {
-            selectAlistador.innerHTML = '<option value="">-- Seleccionar --</option>';
-            empleados.forEach(e => {
-                const opt = document.createElement('option');
-                opt.value = e.id;
-                opt.textContent = e.nombre;
-                selectAlistador.appendChild(opt);
-            });
-        }
-    } catch (err) {
-        console.warn("No se pudieron cargar empleados:", err.message);
-    }
-
+    // El usuario ya está autenticado via JWT desde login.html.
+    // Esta función solo activa la vista de carga de Excel.
     const user = api.getUser();
+    if (!user) {
+        // Sesión inválida — redirigir al login
+        api.logout();
+        return;
+    }
     app.user = { id: user.cedula, name: user.nombre };
 
+    // Ocultar pantalla de cedula (en caso de que se muestre por alguna razón)
     document.getElementById('view-login-validator').classList.add('hidden');
     document.getElementById('view-upload').classList.remove('hidden');
 
@@ -1536,7 +1526,7 @@ async function checkPickerAndStart() {
 
     if (pickRecord) {
         app.picker = pickRecord.picker;
-        startValidation(orderId);
+        await startValidation(orderId);
     } else {
         // Mostrar selección manual usando la API
         const select = document.getElementById('manual-picker-select');
@@ -1559,13 +1549,13 @@ async function checkPickerAndStart() {
  * Confirma la selección manual del alistador
  * Se usa cuando no hay registro automático en el historial
  */
-function confirmManualPicker() {
+async function confirmManualPicker() {
     const val = document.getElementById('manual-picker-select').value;
     if (!val) return alert("Seleccione un funcionario");
     app.picker = val;
     document.getElementById('modal-picker-select').classList.add('hidden');
     document.getElementById('modal-picker-select').classList.remove('flex');
-    startValidation(app.tempOrderId);
+    await startValidation(app.tempOrderId);
 }
 
 /**
