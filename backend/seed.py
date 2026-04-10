@@ -16,19 +16,19 @@ USUARIOS_INICIALES = [
     {
         "cedula": "admin",
         "nombre": "Administrador",
-        "password": "cambiar_esta_clave",
+        "password": "L=g!m$t7",
         "rol": "admin",
     },
     {
         "cedula": "79714232",
         "nombre": "JUVENAL GALINDO",
-        "password": "cambiar_esta_clave",
+        "password": "Jg13579*",
         "rol": "supervisor",
     },
     {
         "cedula": "1013678677",
-        "nombre": "LAURA PELAEZ",
-        "password": "cambiar_esta_clave",
+        "nombre": "EDGAR GARCIA",
+        "password": "Eg13579*",
         "rol": "supervisor",
     },
 ]
