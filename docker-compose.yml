@@ -40,7 +40,7 @@ services:
     container_name: brakepak_frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8083:83"
     depends_on:
       - backend
     networks:
