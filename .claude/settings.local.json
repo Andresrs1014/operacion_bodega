@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls C:/operacion_bodega/frontend/*.html)"
+    ]
+  }
+}
