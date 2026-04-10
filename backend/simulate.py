@@ -144,8 +144,8 @@ def simulate(dias: int = 30, pedidos_por_dia: int = 25):
                 aux = auxiliares[aux_idx]
                 perfil = PERFILES[aux_idx]
 
-                # Número de pedido único
-                num_pedido = f"{random.randint(40000000, 49999999)}"
+                # Número de pedido único — rango compatible con Excel real (5-6 dígitos)
+                num_pedido = f"{random.randint(40000, 99999)}"
                 pedido = db.query(Pedido).filter(Pedido.numero_pedido == num_pedido).first()
                 if not pedido:
                     cliente = random.choice(clientes_obj)

@@ -1167,6 +1167,8 @@ let app = {
     picker: null,                // Nombre del alistador del pedido
     pickingTime: null,           // Tiempo de alistamiento
     orderId: null,               // Número del pedido en validación
+    alistamientoId: null,        // ID del alistamiento activo en el backend
+    validacionId: null,          // ID de la validación activa en el backend
     clientInfo: {                // Información del cliente
         name: '',
         address: '',
@@ -1200,15 +1202,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Auto-login con el token JWT: saltar PIN y pasar directo al menú de rol
+    // Auto-login con JWT: saltar PIN y pasar directo al menú de rol
     const user = api.getUser();
     if (user) {
         app.user = { id: user.cedula, name: user.nombre };
-        document.getElementById('display-user-name').textContent = user.nombre;
-        document.getElementById('header-user-info').classList.remove('hidden');
-        // Saltar el overlay de PIN
-        const overlay = document.getElementById('login-overlay');
-        if (overlay) overlay.style.display = 'none';
         resetView('menu');
     }
 
@@ -1263,7 +1260,7 @@ function resetView(target) {
 }
 
 function logout() {
-    location.reload();
+    api.logout();
 }
 
 function returnToValidationStart() {
@@ -1579,14 +1576,15 @@ function confirmManualPicker() {
  * - Inicializa la interfaz de validación
  * @param {string} orderId - Número del pedido a validar
  */
-function startValidation(orderId) {
+async function startValidation(orderId) {
     app.orderId = orderId;
     app.corrections = [];
     app.observations = "";
-    app.supervisorAuthorized = false; // RESET PARA NUEVA VALIDACION
+    app.supervisorAuthorized = false;
+    app.validacionId = null;
 
     document.getElementById('input-observations').value = "";
-    app.startTime = new Date(); // Hora de inicio de validación
+    app.startTime = new Date();
 
     const row0 = app.fullExcel[0];
     const keys = Object.keys(row0);
@@ -1637,6 +1635,14 @@ function startValidation(orderId) {
             status: 'pending'
         };
     });
+
+    // Registrar validación en el backend
+    try {
+        const result = await api.iniciarValidacion(orderId, app.startTime.toISOString());
+        app.validacionId = result.id;
+    } catch (e) {
+        console.warn("No se pudo registrar validación en backend:", e.message);
+    }
 
     document.getElementById('view-upload').classList.add('hidden');
     document.getElementById('view-validate').classList.remove('hidden');
@@ -1774,8 +1780,25 @@ function tryFinishValidation() {
  * Finaliza el proceso de validación y genera la etiqueta de constancia
  * @param {boolean} hasNews - Si la validación se cerró con novedades
  */
-function finishValidation(hasNews) {
+async function finishValidation(hasNews) {
     app.endTime = new Date();
+
+    // Cerrar validación en el backend
+    if (app.validacionId) {
+        const totalUnidades = app.orderData.reduce((s, i) => s + i.scanned, 0);
+        try {
+            await api.cerrarValidacion(app.validacionId, {
+                hora_fin: app.endTime.toISOString(),
+                total_unidades: totalUnidades,
+                estado: hasNews ? "CON_NOVEDADES" : "OK",
+                observaciones: app.observations || null,
+                cerrado_con_novedades: hasNews,
+            });
+        } catch (e) {
+            console.warn("No se pudo cerrar validación en backend:", e.message);
+        }
+    }
+
     document.getElementById('view-validate').classList.add('hidden');
     document.getElementById('view-label').classList.remove('hidden');
 
@@ -2001,6 +2024,15 @@ async function startPickingTimer() {
     app.user = { name: empName, id };
     app.orderId = order;
     app.pickingStartTime = new Date();
+
+    // Registrar alistamiento en el backend
+    try {
+        const result = await api.iniciarAlistamiento(order, app.pickingStartTime.toISOString());
+        app.alistamientoId = result.id;
+    } catch (e) {
+        console.warn("No se pudo registrar alistamiento en backend:", e.message);
+    }
+
     document.getElementById('picking-step-1').classList.add('hidden');
     document.getElementById('picking-step-2').classList.remove('hidden');
     document.getElementById('display-picking-order').textContent = order;
@@ -2026,16 +2058,30 @@ function cancelPicking() {
  * Finaliza el temporizador de alistamiento
  * Guarda el registro en el historial para futuras validaciones
  */
-function endPickingTimer() {
-    if (!confirm("¿Finalizar?")) return;
+async function endPickingTimer() {
+    if (!confirm("¿Finalizar alistamiento?")) return;
+    const horaFin = new Date();
+
+    // Cerrar en backend
+    if (app.alistamientoId) {
+        try {
+            await api.cerrarAlistamiento(app.alistamientoId, horaFin.toISOString());
+        } catch (e) {
+            console.warn("No se pudo cerrar alistamiento en backend:", e.message);
+        }
+    }
+
+    // Guardar historial local para que el validador pueda encontrar al alistador
     let history = JSON.parse(localStorage.getItem('brakepak_picking_history') || "[]");
     history.push({
         order: app.orderId,
         picker: app.user.name,
         start: app.pickingStartTime.toISOString(),
-        end: new Date().toISOString()
+        end: horaFin.toISOString()
     });
     localStorage.setItem('brakepak_picking_history', JSON.stringify(history));
-    alert("Guardado");
+
+    app.alistamientoId = null;
+    alert("✅ Alistamiento guardado");
     resetView('menu');
 }

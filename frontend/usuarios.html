@@ -6,6 +6,7 @@
     <title>BRAKEPAK · Usuarios</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="js/api.js"></script>
+    <script src="js/nav.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background: #f1f5f9; }
         .card { background: white; border-radius: 16px; box-shadow: 0 1px 8px rgba(0,0,0,0.07); padding: 24px; }
@@ -17,18 +18,8 @@
 </head>
 <body class="min-h-screen">
 
-<!-- HEADER -->
-<header class="bg-red-700 text-white px-6 py-3 flex justify-between items-center shadow-lg">
-    <div class="flex items-center gap-4">
-        <span class="font-black text-xl tracking-widest">BRAKEPAK</span>
-        <span class="text-red-200 text-xs font-mono border-l border-red-500 pl-4">GESTIÓN DE USUARIOS</span>
-    </div>
-    <div class="flex items-center gap-4">
-        <span id="headerUser" class="text-sm font-bold text-red-100"></span>
-        <a href="dashboard.html" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">DASHBOARD</a>
-        <button onclick="api.logout()" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">SALIR</button>
-    </div>
-</header>
+<div id="bp-nav"></div>
+<script>initNav('USUARIOS', 'usuarios');</script>
 
 <main class="p-6 max-w-5xl mx-auto space-y-6">
 
@@ -114,7 +105,6 @@ window.onload = () => {
     if (!api.isLoggedIn()) { window.location.href = '/login.html'; return; }
     const user = api.getUser();
     if (user.rol !== 'admin') { window.location.href = '/dashboard.html'; return; }
-    document.getElementById('headerUser').textContent = user.nombre;
     cargarUsuarios();
 };
 

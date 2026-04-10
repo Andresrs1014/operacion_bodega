@@ -6,22 +6,12 @@
     <title>BRAKEPAK - Menú</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="js/api.js"></script>
+    <script src="js/nav.js"></script>
 </head>
 <body class="min-h-screen bg-gray-100 flex flex-col">
 
-    <header class="bg-red-700 text-white px-6 py-3 flex justify-between items-center shadow-md">
-        <div>
-            <span class="font-black text-lg tracking-widest">BRAKEPAK</span>
-            <span class="text-red-200 text-xs ml-3 font-mono">LOGIMAT</span>
-        </div>
-        <div class="flex items-center gap-4">
-            <span id="headerUser" class="text-sm font-bold"></span>
-            <a id="btn-dashboard" href="dashboard.html" class="hidden bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1 rounded transition">DASHBOARD</a>
-            <button onclick="api.logout()" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1 rounded transition">
-                SALIR
-            </button>
-        </div>
-    </header>
+    <div id="bp-nav"></div>
+    <script>initNav('MENÚ', 'menu');</script>
 
     <main class="flex-1 flex items-center justify-center p-8">
         <div class="grid grid-cols-1 gap-6 w-full max-w-sm">
@@ -43,15 +33,7 @@
 
     <script>
         window.onload = () => {
-            if (!api.isLoggedIn()) {
-                window.location.href = '/login.html';
-                return;
-            }
-            const user = api.getUser();
-            document.getElementById('headerUser').textContent = user.nombre;
-            if (user.rol === 'admin' || user.rol === 'supervisor') {
-                document.getElementById('btn-dashboard').classList.remove('hidden');
-            }
+            if (!api.isLoggedIn()) window.location.href = '/login.html';
         };
     </script>
 </body>
