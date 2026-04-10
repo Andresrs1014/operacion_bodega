@@ -11,24 +11,15 @@
     
     <link rel="stylesheet" href="css/style_index.css" />
     <script src="js/api.js"></script>
+    <script src="js/nav.js"></script>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
     
     <!-- Session guard -->
     <script>if (!localStorage.getItem('bp_token')) window.location.href = '/login.html';</script>
 
-    <header class="bg-red-700 text-white px-4 py-2 flex justify-between items-center shadow-md z-30 shrink-0">
-        <div class="flex items-center gap-4">
-            <span class="font-black text-xl tracking-widest">BRAKEPAK</span>
-            <span class="text-red-200 text-xs font-mono border-l border-red-500 pl-4">EMPAQUE · LOGIMAT</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <a href="menu.html" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">MENÚ</a>
-            <button onclick="downloadDailyLog()" class="bg-white text-red-700 hover:bg-gray-100 px-4 py-1.5 rounded-lg text-xs font-bold shadow transition">
-                REPORTE
-            </button>
-        </div>
-    </header>
+    <div id="bp-nav"></div>
+    <script>initNav('EMPAQUE', 'empaque');</script>
 
     <div class="flex flex-1 overflow-hidden">
         <div class="w-[450px] bg-white border-r border-gray-300 flex flex-col shadow-lg z-20 relative">

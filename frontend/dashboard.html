@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/nav.js"></script>
     <style>
         body { font-family: 'Arial', sans-serif; background: #f1f5f9; }
 
@@ -35,23 +36,8 @@
 </head>
 <body class="min-h-screen">
 
-<!-- HEADER -->
-<header class="bg-red-700 text-white px-6 py-3 flex justify-between items-center shadow-lg">
-    <div class="flex items-center gap-4">
-        <span class="font-black text-xl tracking-widest">BRAKEPAK</span>
-        <span class="text-red-200 text-xs font-mono border-l border-red-500 pl-4">DASHBOARD · LOGIMAT</span>
-    </div>
-    <div class="flex items-center gap-4">
-        <div class="flex items-center gap-2 text-xs">
-            <span class="w-2 h-2 bg-green-400 rounded-full pulse-dot"></span>
-            <span id="reloj" class="font-mono text-red-100"></span>
-        </div>
-        <span id="headerUser" class="text-sm font-bold text-red-100"></span>
-        <a id="btn-usuarios" href="usuarios.html" class="hidden bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">USUARIOS</a>
-        <a href="menu.html" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">OPERACIONES</a>
-        <button onclick="api.logout()" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">SALIR</button>
-    </div>
-</header>
+<div id="bp-nav"></div>
+<script>initNav('DASHBOARD', 'dashboard');</script>
 
 <main class="p-6 max-w-7xl mx-auto space-y-6">
 
@@ -193,13 +179,8 @@
 // ──────────────────────────────────────────────────────────────────────────────
 window.onload = () => {
     if (!api.isLoggedIn()) { window.location.href = '/login.html'; return; }
-
     const user = api.getUser();
     if (user.rol === 'operario') { window.location.href = '/menu.html'; return; }
-    document.getElementById('headerUser').textContent = user.nombre;
-    if (user.rol === 'admin') document.getElementById('btn-usuarios').classList.remove('hidden');
-
-    iniciarReloj();
     cargarTodo();
     setInterval(cargarActivos, 30000);
 };
@@ -207,16 +188,6 @@ window.onload = () => {
 let periodoActual = 'dia';
 let chartHoras = null;
 let chartExactitud = null;
-
-function iniciarReloj() {
-    function tick() {
-        const now = new Date();
-        document.getElementById('reloj').textContent =
-            now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
-    tick();
-    setInterval(tick, 1000);
-}
 
 function setPeriodo(p, btn) {
     periodoActual = p;

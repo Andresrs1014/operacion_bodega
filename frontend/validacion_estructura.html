@@ -18,23 +18,13 @@
 
     <link rel="stylesheet" href="css/style_validacion.css" />
     <script src="js/api.js"></script>
+    <script src="js/nav.js"></script>
 </head>
 <body class="bg-white text-slate-800 h-screen flex flex-col overflow-hidden">
 
     <!-- HEADER -->
-    <header class="bg-red-700 text-white p-3 shadow-md flex justify-between items-center z-20 print:hidden">
-        <div class="flex items-center gap-4">
-            <span class="font-black text-xl tracking-widest">BRAKEPAK</span>
-            <span class="text-red-200 text-xs font-mono border-l border-red-500 pl-4">VALIDACIÓN · LOGIMAT</span>
-        </div>
-        <div class="flex items-center gap-3">
-            <div id="header-user-info" class="hidden items-center gap-3">
-                <p id="display-user-name" class="font-bold text-xs text-red-100 uppercase"></p>
-            </div>
-            <a href="menu.html" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">MENÚ</a>
-            <button onclick="logout()" class="bg-red-800 hover:bg-red-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">SALIR</button>
-        </div>
-    </header>
+    <div id="bp-nav" class="print:hidden"></div>
+    <script>initNav('VALIDACIÓN', 'validacion');</script>
 
     <main class="flex-1 overflow-y-auto p-3 relative bg-slate-50 print:bg-white print:p-0">
         
