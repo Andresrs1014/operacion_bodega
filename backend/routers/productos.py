@@ -33,7 +33,7 @@ from services.productos import (
 router = APIRouter(prefix="/productos/ue", tags=["Productos UE"])
 
 
-@router.get("/", response_model=ProductoUePage)
+@router.get("", response_model=ProductoUePage)
 def listar_ue(
     q: Optional[str] = Query(None, description="Búsqueda por referencia o texto"),
     page: int = Query(1, ge=1),
@@ -44,7 +44,7 @@ def listar_ue(
     return list_productos_ue(db, q, page, limit)
 
 
-@router.post("/", response_model=ProductoUeOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ProductoUeOut, status_code=status.HTTP_201_CREATED)
 def crear_ue(
     body: ProductoUeCreate,
     db: Session = Depends(get_db),
