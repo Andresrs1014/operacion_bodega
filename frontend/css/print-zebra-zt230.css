@@ -1,13 +1,13 @@
 /**
- * Zebra ZT-230 — etiquetas 4"×6" (~102×152 mm), 203 dpi.
+ * Zebra ZT-230 — etiquetas 4"×3" (~102×76 mm), 203 dpi.
  * Validación: añadir clase `print-validation-active` al body antes de `window.print()`.
  * Empaque: usa cola `#finalPrintQueue` (sin esa clase en body).
  * Dashboard / Excel: no importan esta hoja.
  */
 :root {
     --zebra-page-w: 102mm;
-    --zebra-page-h: 152mm;
-    --zebra-margin: 2mm;
+    --zebra-page-h: 76mm;
+    --zebra-margin: 1.5mm;
 }
 
 @media print {

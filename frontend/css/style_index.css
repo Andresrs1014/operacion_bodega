@@ -17,11 +17,11 @@ body {
     flex-direction: column;
 }
 
-/* Contenedor etiqueta empaque: mismo tamaño lógico que Zebra 4×6" (ver print-zebra-zt230.css) */
+/* Contenedor etiqueta empaque: mismo tamaño lógico que Zebra 4×3" = 102×76mm (ver print-zebra-zt230.css) */
 .label-container {
     width: 102mm;
-    min-height: 152mm;
-    max-height: 152mm;
+    min-height: 76mm;
+    max-height: 76mm;
     overflow: hidden;
     max-width: 100%;
     margin: 0 auto;
@@ -29,137 +29,138 @@ body {
     background: #fff;
     border: 1px solid #ccc;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    padding: 2mm;
+    padding: 1.5mm;
     display: flex;
     flex-direction: column;
     font-family: 'Roboto Condensed', sans-serif;
     color: #000;
 }
 
-.info-section { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: flex-start; 
-    gap: 1mm; 
+.info-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0.3mm;
 }
-.data-row { 
-    border-bottom: 2px solid #000; 
-    padding-bottom: 1px; 
-    margin-bottom: 1px; 
+.data-row {
+    border-bottom: 1px solid #000;
+    padding-bottom: 0;
+    margin-bottom: 0;
 }
-.field-label { 
-    font-size: 10px; 
-    text-transform: uppercase; 
-    font-weight: 700; 
-    color: #000; 
-    margin-bottom: -2px; 
+.field-label {
+    font-size: 7px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #000;
+    margin-bottom: -1px;
+    line-height: 1;
 }
-.field-value { 
-    font-size: 18px; 
-    font-weight: 900; 
-    line-height: 0.95; 
-    white-space: nowrap; 
-    overflow: hidden; 
-    text-overflow: ellipsis; 
+.field-value {
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .field-value.huge {
-    font-size: 20px;
-    line-height: 0.9;
-} 
-.field-value.address { 
-    font-size: 18px; 
-    white-space: normal; 
-    line-height: 0.9; 
-} 
+    font-size: 14px;
+    line-height: 1;
+}
+.field-value.address {
+    font-size: 11px;
+    white-space: normal;
+    line-height: 1;
+}
 
 .location-row {
     display: flex;
     flex-direction: row;
     align-items: stretch;
     width: 100%;
-    border-bottom: 2px solid #000;
-    padding-bottom: 1px;
-    margin-bottom: 1px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 0;
+    margin-bottom: 0;
 }
-.loc-col { 
-    padding-left: 2px; 
-    padding-right: 2px; 
-    overflow: hidden; 
+.loc-col {
+    padding-left: 2px;
+    padding-right: 2px;
+    overflow: hidden;
 }
-.loc-col.border-r { 
-    border-right: 2px solid #000; 
+.loc-col.border-r {
+    border-right: 1px solid #000;
 }
 
-.orders-row { 
-    border-bottom: 3px solid #000; 
-    padding-top: 1mm; 
-    padding-bottom: 1mm; 
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between; 
+.orders-row {
+    border-bottom: 2px solid #000;
+    padding-top: 0.5mm;
+    padding-bottom: 0.5mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
-.orders-content { 
-    flex: 1; 
-    padding-right: 2mm; 
+.orders-content {
+    flex: 1;
+    padding-right: 1.5mm;
 }
 .orders-value {
-    font-size: 26px;
+    font-size: 16px;
     font-weight: 900;
     line-height: 0.9;
     word-break: break-all;
-    letter-spacing: -1px;
+    letter-spacing: -0.5px;
 }
 
-.box-indicator { 
-    border: 3px solid #000; 
-    padding: 2px 4px; 
-    font-size: 24px; 
-    font-weight: 900; 
-    border-radius: 4px; 
-    white-space: nowrap; 
-    line-height: 1; 
+.box-indicator {
+    border: 2px solid #000;
+    padding: 1px 3px;
+    font-size: 16px;
+    font-weight: 900;
+    border-radius: 3px;
+    white-space: nowrap;
+    line-height: 1;
 }
 
-.footer-zone { 
-    height: 20mm; 
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between; 
-    margin-top: 1mm; 
+.footer-zone {
+    height: 13mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.5mm;
 }
-.barcode-area { 
-    flex: 1; 
-    height: 100%; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: flex-start; 
-    justify-content: center; 
+.barcode-area {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
 }
-.barcode-area svg { 
-    width: 100%; 
-    max-width: 60mm; 
-    height: 100%; 
+.barcode-area svg {
+    width: 100%;
+    max-width: 60mm;
+    height: 100%;
 }
-.barcode-text { 
-    font-family: 'Roboto Mono', monospace; 
-    font-size: 11px; 
-    font-weight: bold; 
-    margin-left: 2mm; 
+.barcode-text {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    font-weight: bold;
+    margin-left: 1mm;
 }
-.logos-area { 
-    width: 35mm; 
-    height: 100%; 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: center; 
-    align-items: center; 
-    gap: 1mm; 
+.logos-area {
+    width: 30mm;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5mm;
 }
-.logo-img { 
-    max-width: 100%; 
-    max-height: 9mm; 
-    object-fit: contain; 
+.logo-img {
+    max-width: 100%;
+    max-height: 6mm;
+    object-fit: contain;
 }
 
 .scan-success { 
