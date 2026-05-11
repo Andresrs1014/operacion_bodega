@@ -3,8 +3,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from database import engine, Base
-from routers import auth, usuarios, empaque, validacion, kpis, reportes
+from bootstrap import run_bootstrap
+from database import engine, Base, SessionLocal
+from routers import auth, usuarios, empaque, validacion, kpis, reportes, productos
 from scheduler import start_scheduler, stop_scheduler
 from migration_add_label_snapshot import up as migrate_label_snapshot
 import models  # noqa: F401 — registra todos los modelos en Base
@@ -14,6 +15,11 @@ Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    db = SessionLocal()
+    try:
+        run_bootstrap(db)
+    finally:
+        db.close()
     migrate_label_snapshot()
     start_scheduler()
     yield
@@ -41,6 +47,7 @@ app.include_router(empaque.router)
 app.include_router(validacion.router)
 app.include_router(kpis.router)
 app.include_router(reportes.router)
+app.include_router(productos.router)
 
 
 @app.get("/health")

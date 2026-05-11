@@ -123,6 +123,21 @@
                     <button onclick="resetExcelData()" class="bg-white text-red-600 px-3 py-1 rounded border border-red-200 text-xs font-bold">CAMBIAR ARCHIVO</button>
                 </div>
 
+                <!-- Banner catálogo UE sin configurar -->
+                <div id="catalogo-warning-banner"
+                     class="hidden mt-3 rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-3 flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5 shrink-0"></i>
+                    <div class="flex-1 min-w-0">
+                        <p id="catalogo-warning-text" class="text-xs font-bold text-amber-900"></p>
+                        <p class="text-xs text-amber-700 mt-0.5">
+                            <a href="/unidades_empaque.html" target="_blank"
+                               class="underline hover:text-amber-900">Ver catálogo UE →</a>
+                        </p>
+                    </div>
+                    <button onclick="hideCatalogoWarningBanner()"
+                            class="text-amber-400 hover:text-amber-600 text-xs font-bold shrink-0">✕</button>
+                </div>
+
                 <!-- Zona Carga -->
                 <div id="upload-zone">
                     <div id="excel-dropzone" class="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center hover:bg-slate-50 cursor-pointer relative">

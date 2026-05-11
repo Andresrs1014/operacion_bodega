@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 from pydantic import BaseModel
 
 
@@ -130,3 +130,56 @@ class LabelSnapshotOut(BaseModel):
     hora_fin: Optional[datetime] = None
     total_unidades: int
     estado: str
+
+
+# ── PRODUCTOS / UNIDADES DE EMPAQUE ───────────────────────────────────────────
+
+class ProductoUeOut(BaseModel):
+    id: int
+    referencia: str
+    unidad_empaque: int
+    texto_unidad_empaque: Optional[str] = None
+    fecha_actualizacion: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ProductoUeCreate(BaseModel):
+    referencia: str
+    unidad_empaque: int
+    texto_unidad_empaque: Optional[str] = None
+
+
+class ProductoUeUpdate(BaseModel):
+    unidad_empaque: Optional[int] = None
+    texto_unidad_empaque: Optional[str] = None
+
+
+class ProductoUePage(BaseModel):
+    items: List[ProductoUeOut]
+    total: int
+    page: int
+    pages: int
+
+
+class ProductoUeBatchRequest(BaseModel):
+    referencias: List[str]
+
+
+class ProductoUeBatchItem(BaseModel):
+    referencia: str
+    unidad_empaque: int
+    texto_unidad_empaque: Optional[str] = None
+
+
+class ImportRowError(BaseModel):
+    fila: int
+    referencia: str
+    motivo: str
+
+
+class ImportResult(BaseModel):
+    ok: bool
+    creadas: int
+    actualizadas: int
+    errores: List[ImportRowError]

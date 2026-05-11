@@ -18,7 +18,7 @@
 
 - Cierre y correcciones: solo el **validador asignado**, o **supervisor/admin**.
 - `POST /validacion/{id}/correccion` con `id_supervisor` resuelto desde `GET /validacion/supervisores-firma` (nombres deben coincidir con usuarios en BD).
-- Códigos locales `SUPERVISORS` en JS deben mapear a **nombres reales** de supervisores en la base (exactamente como en tabla `usuario.nombre`; el seed inicial en `backend/seed.py` usa **JUVENAL GALINDO** y **EDGAR GARCIA**). Si hay desajuste, se muestra aviso y la corrección puede no persistir.
+- Códigos locales `SUPERVISORS` en JS deben mapear a **nombres reales** de supervisores en la base (exactamente como en tabla `usuarios.nombre`). Crear esos usuarios desde **Usuarios** (admin). Si hay desajuste, la corrección puede no persistir.
 - Pedido con cierre **CON_NOVEDADES** queda en estado `EN_PROCESO` (antes quedaba inconsistente).
 
 ### Alistamiento cancelado

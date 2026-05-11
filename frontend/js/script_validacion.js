@@ -15,9 +15,6 @@ const SUPERVISORS = {
 // Email de destino para reportes de validación
 const REPORT_EMAIL = "laura.pelaez@logimat.com.co";
 
-// URL de Google Sheets que contiene la base de datos maestra de referencias y unidades de empaque
-// Esta hoja se sincroniza en tiempo real para obtener información actualizada de productos
-const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSPQdfoNhLGDrjllSqgR_4lQxH0GmxQ02XHG9txUynTDQQXG6Vg8chO95cZQVlge0HctFCvgTIciBPS/pub?gid=1080426998&single=true&output=csv";
 
 // ==========================================
 // BASE DE DATOS GEOGRÁFICA (CIUDADES Y DEPARTAMENTOS)
@@ -1396,121 +1393,30 @@ async function attemptLogin() {
 }
 
 // ==========================================
-// SINCRONIZACIÓN DE DATOS MAESTROS
-// TODO (futuro): reemplazar la carga manual de Excel por sincronización automática
-// con Google Sheets publicado como CSV. La URL y la lógica de parseo ya estaban
-// implementadas en fetchMasterData() — se desactivó porque los proxies CORS
-// públicos (allorigins.win, corsproxy.io) son inestables en producción.
-// Alternativa recomendada: crear un endpoint en el backend que haga el fetch
-// server-side y exponga los datos como /api/referencias, eliminando la dependencia
-// de proxies externos.
-//
-// URL original de Sheets:
-// https://docs.google.com/spreadsheets/d/e/2PACX-1vSPQdfoNhLGDrjllSqgR_4lQxH0GmxQ02XHG9txUynTDQQXG6Vg8chO95cZQVlge0HctFCvgTIciBPS/pub?gid=1080426998&single=true&output=csv
+// CATÁLOGO DE UNIDADES DE EMPAQUE (BACKEND)
 // ==========================================
 
 /**
- * Obtiene los datos maestros de productos desde Google Sheets
- * Utiliza múltiples proxies CORS para mayor confiabilidad
- * Parsea el CSV y extrae las unidades de empaque de cada referencia
- * Los datos se almacenan en app.masterData
- * 
- * Estrategia de conexión:
- * 1. Intenta conectar con el primer proxy
- * 2. Si falla, intenta con el segundo proxy
- * 3. Si todos fallan, muestra error al usuario
+ * Carga las UE del catálogo backend solo para las referencias del pedido activo.
+ * Fallback: si falla la API, retorna mapa vacío (UE=1 implícito).
  */
-async function fetchMasterData() {
-    const spinner = document.getElementById('sync-spinner');
-    const syncText = document.getElementById('sync-text');
-
-    // Estrategia: Intentar Proxy 1, si falla, Proxy 2
-    const proxies = [
-        "https://api.allorigins.win/raw?url=",
-        "https://corsproxy.io/?"
-    ];
-
-    let csvText = null;
-
-    for (const proxyBase of proxies) {
-        try {
-            const target = proxyBase + encodeURIComponent(GOOGLE_SHEET_URL);
-            console.log("Intentando conectar vía:", proxyBase);
-            const response = await fetch(target);
-            if (response.ok) {
-                csvText = await response.text();
-                break; // Éxito, salir del loop
-            }
-        } catch (e) {
-            console.warn("Fallo proxy:", proxyBase, e);
-        }
-    }
-
-    if (csvText) {
-        Papa.parse(csvText, {
-            header: true,
-            complete: (res) => {
-                res.data.forEach(row => {
-                    const vals = Object.values(row);
-                    const keys = Object.keys(row);
-
-                    let refVal = row['REFERENCIA'] || row['Referencia'];
-                    if (!refVal) {
-                        const keyRef = keys.find(k => k.toUpperCase().includes('REFERENCIA'));
-                        if (keyRef) refVal = row[keyRef];
-                        else refVal = vals[0];
-                    }
-
-                    let unitVal = row['UNIDAD DE EMPAQUE'] || row['Unidad de Empaque'];
-                    if (!unitVal) {
-                        const keyUnit = keys.find(k => k.toUpperCase().includes('UNIDAD') || k.toUpperCase().includes('EMPAQUE'));
-                        if (keyUnit) unitVal = row[keyUnit];
-                        else unitVal = vals[1];
-                    }
-
-                    const ref = String(refVal || "").trim();
-                    const unitStr = String(unitVal || "1");
-
-                    let multiplier = 1;
-                    const match = unitStr.match(/(\d+)/);
-                    if (match) multiplier = parseInt(match[0]);
-
-                    if (ref) app.masterData[ref] = {
-                        unit: multiplier,
-                        unitLabel: unitStr
-                    };
-                });
-
-                // Feedback visual de éxito
-                spinner.classList.remove('animate-spin', 'border-blue-800');
-                spinner.classList.add('bg-green-500', 'border-none');
-                syncText.textContent = "Base de datos sincronizada correctamente.";
-                syncText.classList.remove('text-blue-800');
-                syncText.classList.add('text-green-700');
-            },
-            error: (err) => {
-                handleNetworkError(err, spinner, syncText);
-            }
+async function loadUeFromBackend(refs) {
+    if (!refs || refs.length === 0) return {};
+    try {
+        const unique = [...new Set(refs.map(r => String(r).trim().toUpperCase()).filter(Boolean))];
+        const found = await api.batchUnidadesEmpaque(unique);
+        const map = {};
+        found.forEach(p => {
+            map[p.referencia] = {
+                unit: p.unidad_empaque,
+                unitLabel: p.texto_unidad_empaque || String(p.unidad_empaque),
+            };
         });
-    } else {
-        handleNetworkError("No se pudo conectar con ningún proxy.", spinner, syncText);
+        return map;
+    } catch (e) {
+        console.warn('No se pudo cargar catálogo UE desde backend:', e.message);
+        return {};
     }
-}
-
-/**
- * Maneja errores de conexión al intentar sincronizar datos
- * Actualiza la interfaz para mostrar el estado de error
- * @param {Error|string} err - Error de conexión
- * @param {HTMLElement} spinner - Elemento del spinner de carga
- * @param {HTMLElement} syncText - Elemento de texto de estado
- */
-function handleNetworkError(err, spinner, syncText) {
-    console.error("Error Fatal CORS/Red:", err);
-    spinner.classList.remove('animate-spin');
-    spinner.classList.add('bg-red-500', 'border-none');
-    syncText.textContent = "Error de conexión. Intente recargar.";
-    syncText.classList.add('text-red-700');
-    alert("No se pudo cargar la base de datos de Google Sheets. Verifique su conexión a internet.");
 }
 
 /**
@@ -1522,6 +1428,26 @@ function showFileStatus(hasData) {
     document.getElementById('upload-zone').classList.toggle('hidden', hasData);
     document.getElementById('validation-start-panel').classList.toggle('hidden', !hasData);
     if (hasData) setTimeout(() => document.getElementById('input-order-id-val').focus(), 100);
+}
+
+/**
+ * Muestra el banner de advertencia cuando hay referencias sin UE en el catálogo.
+ * @param {number} count - Número de referencias sin UE registrada
+ */
+function showCatalogoWarningBanner(count) {
+    const banner = document.getElementById('catalogo-warning-banner');
+    const text = document.getElementById('catalogo-warning-text');
+    if (!banner || !text) return;
+    text.textContent = `${count} referencia${count !== 1 ? 's' : ''} sin UE registrada. Se tomará 1 unidad por pistoleo.`;
+    banner.classList.remove('hidden');
+}
+
+/**
+ * Oculta el banner de advertencia del catálogo UE.
+ */
+function hideCatalogoWarningBanner() {
+    const banner = document.getElementById('catalogo-warning-banner');
+    if (banner) banner.classList.add('hidden');
 }
 
 /**
@@ -1550,6 +1476,27 @@ function handleExcelUpload(input) {
 
             // YA NO LEEMOS TABLA_MUNICIPIOS DEL EXCEL, USAMOS LA INTERNA
 
+            // Extraer referencias únicas del Excel para cargar UE desde el catálogo backend
+            const refsDelExcel = (() => {
+                if (!app.fullExcel || app.fullExcel.length === 0) return [];
+                const keys = Object.keys(app.fullExcel[0]);
+                const kRef = keys.find(k => k.match(/referencia|material/i)) || keys[1];
+                return [...new Set(
+                    app.fullExcel.map(r => String(r[kRef] || '').trim().toUpperCase()).filter(Boolean)
+                )];
+            })();
+
+            // Cargar UE desde catálogo backend (no bloqueante — si falla, UE=1)
+            loadUeFromBackend(refsDelExcel).then(catalogMap => {
+                app.masterData = catalogMap;
+                const sinUe = refsDelExcel.filter(r => !catalogMap[r]);
+                if (sinUe.length > 0) {
+                    showCatalogoWarningBanner(sinUe.length);
+                } else {
+                    hideCatalogoWarningBanner();
+                }
+            });
+
             document.getElementById('current-file-name').textContent = input.files[0].name;
             showFileStatus(true);
             VALIDACION_AUX.refreshHistorial().catch(() => {});
@@ -1566,6 +1513,8 @@ function handleExcelUpload(input) {
 function resetExcelData() {
     if (confirm("¿Cargar nuevo archivo?")) {
         app.fullExcel = null;
+        app.masterData = {};
+        hideCatalogoWarningBanner();
         showFileStatus(false);
     }
 }
