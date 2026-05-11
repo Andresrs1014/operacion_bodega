@@ -50,6 +50,7 @@
         width: calc(var(--zebra-page-w) - 2 * var(--zebra-margin));
         min-height: calc(var(--zebra-page-h) - 2 * var(--zebra-margin));
         max-height: calc(var(--zebra-page-h) - 2 * var(--zebra-margin));
+        overflow: hidden !important;
         border: none !important;
         box-shadow: none !important;
         padding: 2mm !important;
