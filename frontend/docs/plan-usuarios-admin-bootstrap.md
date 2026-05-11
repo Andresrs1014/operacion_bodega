@@ -1,6 +1,8 @@
 # Plan: administradores sin hardcode (bootstrap desde el admin inicial)
 
-**Alcance:** análisis, viabilidad y pasos de implementación. **No implementa cambios.**
+> **Estado:** Fase 1 (bootstrap vía `.env` + `seed_dev` opcional + `lifespan`) **implementada** en el código. Este documento sigue sirviendo como referencia; Fases 2–3 pendientes.
+
+**Alcance original:** análisis, viabilidad y pasos de implementación.
 
 **Contexto actual (revisado contra el código):**
 

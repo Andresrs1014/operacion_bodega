@@ -8,6 +8,7 @@ const NAV_LINKS = {
     dashboard:  { label: 'DASHBOARD',   href: '/dashboard.html',             roles: ['admin', 'supervisor'] },
     empaque:    { label: 'EMPAQUE',     href: '/index_estructura.html',      roles: ['admin', 'supervisor', 'operario'] },
     validacion: { label: 'VALIDACIÓN',  href: '/validacion_estructura.html', roles: ['admin', 'supervisor', 'operario'] },
+    catalogo:   { label: 'CATÁLOGO UE', href: '/unidades_empaque.html',      roles: ['admin', 'supervisor'] },
     usuarios:   { label: 'USUARIOS',    href: '/usuarios.html',              roles: ['admin'] },
 };
 

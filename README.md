@@ -32,7 +32,9 @@ operacion_bodega/
 │   ├── dependencies.py       # Guards por rol
 │   ├── email_service.py      # Builder HTML + envío SMTP
 │   ├── scheduler.py          # APScheduler quincenal/mensual
-│   ├── seed.py               # Datos iniciales (admin + supervisores)
+│   ├── bootstrap.py          # Admin inicial desde BOOTSTRAP_* (arranque)
+│   ├── seed_dev.py           # Usuarios demo (solo APP_ENV=development)
+│   ├── seed.py               # Mensaje de migración; usar bootstrap + seed_dev
 │   ├── simulate.py           # Generador de datos de prueba
 │   ├── requirements.txt
 │   ├── Dockerfile
@@ -119,7 +121,8 @@ git clone <repo-url> operacion_bodega
 cd operacion_bodega
 
 cp .env.example .env
-nano .env   # Completar POSTGRES_PASSWORD, SECRET_KEY, SMTP_PASSWORD
+nano .env   # Completar POSTGRES_PASSWORD, SECRET_KEY, SMTP_PASSWORD,
+            # y BOOTSTRAP_ADMIN_CEDULA + BOOTSTRAP_ADMIN_PASSWORD (≥12 caracteres) para el primer admin
 ```
 
 ### 3. Levantar todo
@@ -128,10 +131,14 @@ nano .env   # Completar POSTGRES_PASSWORD, SECRET_KEY, SMTP_PASSWORD
 docker compose up -d --build
 ```
 
-### 4. Seed inicial (primera vez)
+### 4. Primer administrador
+
+Al **primer arranque** del backend, si no existe ningún usuario con rol `admin` activo, se crea uno con las variables `BOOTSTRAP_ADMIN_*` del `.env` (ver `.env.example`). No hace falta ejecutar `seed.py`.
+
+Opcional **solo en desarrollo** (`APP_ENV=development` en `.env`): usuarios demo supervisor/operario:
 
 ```bash
-docker compose exec backend python seed.py
+docker compose exec backend python seed_dev.py
 ```
 
 ### 5. Verificar
@@ -155,8 +162,8 @@ source .venv/bin/activate        # Linux/Mac
 # .venv\Scripts\activate         # Windows
 pip install -r requirements.txt
 
-cp .env.example .env             # Completar variables
-python seed.py                   # Crear tablas + usuarios iniciales
+cp .env.example .env             # Completar variables (incl. BOOTSTRAP_ADMIN_*)
+# Opcional demo: APP_ENV=development y luego python seed_dev.py
 uvicorn main:app --reload
 
 # Frontend

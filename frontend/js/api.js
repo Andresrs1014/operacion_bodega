@@ -174,4 +174,57 @@ const api = {
             hora_fin: horaFin,
         });
     },
+
+    // ── CATÁLOGO UNIDADES DE EMPAQUE ──────────────────────────────────────────────
+    async getUnidadesEmpaque({ q = '', page = 1, limit = 50 } = {}) {
+        const params = new URLSearchParams({ page, limit });
+        if (q) params.set('q', q);
+        return this.request('GET', `/productos/ue?${params}`);
+    },
+
+    async createProductoUe(body) {
+        return this.request('POST', '/productos/ue', body);
+    },
+
+    async updateProductoUe(id, body) {
+        return this.request('PATCH', `/productos/ue/${id}`, body);
+    },
+
+    async deleteProductoUe(id) {
+        return this.request('DELETE', `/productos/ue/${id}`);
+    },
+
+    async batchUnidadesEmpaque(referencias) {
+        return this.request('POST', '/productos/ue/batch', { referencias });
+    },
+
+    async importUnidadesEmpaque(formData) {
+        const token = this.getToken();
+        const res = await fetch(`${API_BASE}/productos/ue/import`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+        });
+        if (!res.ok) {
+            let detail = 'Error al importar';
+            try { detail = (await res.json()).detail || detail; } catch {}
+            const err = new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+            err.status = res.status;
+            throw err;
+        }
+        return res.json();
+    },
+
+    async descargarPlantillaUe() {
+        const token = this.getToken();
+        const res = await fetch(`${API_BASE}/productos/ue/plantilla`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error('No se pudo descargar la plantilla');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'plantilla_ue.xlsx'; a.click();
+        URL.revokeObjectURL(url);
+    },
 };

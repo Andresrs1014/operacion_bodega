@@ -1,65 +1,35 @@
 """
-Script de seed inicial.
-Crea el usuario admin y los supervisores definidos.
+Entrada legada para equipos habituados a `python seed.py`.
 
-Uso:
-    python seed.py
+- En PRODUCCIÓN: el administrador inicial se crea al arrancar el API mediante
+  BOOTSTRAP_ADMIN_CEDULA / BOOTSTRAP_ADMIN_PASSWORD (ver bootstrap.py).
+- Usuarios de demostración: solo con APP_ENV=development ejecutando:  python seed_dev.py
 """
+
 import sys
-from database import SessionLocal, engine, Base
-import models  # noqa: F401 — registra todos los modelos
-from models import Usuario
-from auth import hash_password
+
+from config import settings
 
 
-USUARIOS_INICIALES = [
-    {
-        "cedula": "admin",
-        "nombre": "Administrador",
-        "password": "L=g!m$t7",
-        "rol": "admin",
-    },
-    {
-        "cedula": "79714232",
-        "nombre": "JUVENAL GALINDO",
-        "password": "Jg13579*",
-        "rol": "supervisor",
-    },
-    {
-        "cedula": "1013678677",
-        "nombre": "EDGAR GARCIA",
-        "password": "Eg13579*",
-        "rol": "supervisor",
-    },
-]
-
-
-def seed():
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    try:
-        created = 0
-        for data in USUARIOS_INICIALES:
-            existe = db.query(Usuario).filter(Usuario.cedula == data["cedula"]).first()
-            if not existe:
-                user = Usuario(
-                    cedula=data["cedula"],
-                    nombre=data["nombre"],
-                    password_hash=hash_password(data["password"]),
-                    rol=data["rol"],
-                )
-                db.add(user)
-                created += 1
-                print(f"  ✓ Creado: {data['nombre']} ({data['rol']})")
-            else:
-                print(f"  - Ya existe: {data['nombre']}")
-
-        db.commit()
-        print(f"\nSeed completado. {created} usuario(s) creado(s).")
-        print("\n⚠️  Cambia las contraseñas desde la app antes de poner en producción.")
-    finally:
-        db.close()
+def main() -> None:
+    print(
+        "\nEste proyecto ya no carga usuarios de produccion desde este archivo.\n\n"
+        "  • Produccion / Docker:\n"
+        "    Configure en .env: BOOTSTRAP_ADMIN_CEDULA, BOOTSTRAP_ADMIN_PASSWORD\n"
+        "    (opcional: BOOTSTRAP_ADMIN_NOMBRE). Al iniciar el backend, se crea el primer\n"
+        "    admin si no existe ninguno activo.\n\n"
+        "  • Desarrollo (usuarios demo supervisor/operario):\n"
+        "    APP_ENV=development  y  python seed_dev.py\n\n"
+        "Mas detalle: frontend/docs/plan-usuarios-admin-bootstrap.md\n",
+        file=sys.stderr,
+    )
+    if settings.app_environment.lower() == "development":
+        print(
+            "(APP_ENV=development) Para crear usuarios demo ejecute: python seed_dev.py\n",
+            file=sys.stderr,
+        )
+    sys.exit(1)
 
 
 if __name__ == "__main__":
-    seed()
+    main()
