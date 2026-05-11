@@ -59,8 +59,24 @@ const api = {
         }
 
         if (!res.ok) {
-            const err = await res.json().catch(() => ({ detail: "Error de red" }));
-            throw new Error(err.detail || "Error desconocido");
+            let errBody;
+            try {
+                errBody = await res.json();
+            } catch {
+                errBody = { detail: "Error de red" };
+            }
+            const detail = errBody.detail;
+            const msg =
+                typeof detail === "string"
+                    ? detail
+                    : Array.isArray(detail)
+                        ? detail.map((d) => (d.msg ? d.msg : JSON.stringify(d))).join("; ")
+                        : detail != null
+                            ? JSON.stringify(detail)
+                            : res.statusText || "Error";
+            const err = new Error(msg);
+            err.status = res.status;
+            throw err;
         }
 
         if (res.status === 204) return null;
@@ -127,5 +143,31 @@ const api = {
 
     async registrarCorreccion(validacionId, correccion) {
         return this.request("POST", `/validacion/${validacionId}/correccion`, correccion);
+    },
+
+    async getSupervisoresFirma() {
+        return this.request("GET", "/validacion/supervisores-firma");
+    },
+
+    async getMisValidaciones(limit = 50) {
+        return this.request("GET", `/validacion/mias?limit=${limit}`);
+    },
+
+    async getMiBorrador() {
+        return this.request("GET", "/validacion/mi-borrador");
+    },
+
+    async putMiBorrador(borradorBody) {
+        return this.request("PUT", "/validacion/mi-borrador", borradorBody);
+    },
+
+    async deleteMiBorrador() {
+        return this.request("DELETE", "/validacion/mi-borrador");
+    },
+
+    async cancelarAlistamiento(alistamientoId, horaFin = null) {
+        return this.request("PATCH", `/validacion/alistamiento/${alistamientoId}/cancelar`, {
+            hora_fin: horaFin,
+        });
     },
 };

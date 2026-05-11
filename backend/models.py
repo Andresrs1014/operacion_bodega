@@ -152,6 +152,20 @@ class Validacion(Base):
     correcciones = relationship("Correccion", back_populates="validacion", cascade="all, delete-orphan")
 
 
+class ValidacionBorrador(Base):
+    """Borrador de validación en curso: una fila por usuario (sesión propia)."""
+    __tablename__ = "validacion_borradores"
+
+    id = Column(Integer, primary_key=True, index=True)
+    id_usuario = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    numero_pedido = Column(String(50), nullable=False, index=True)
+    payload_json = Column(Text, nullable=False)
+    id_validacion = Column(Integer, ForeignKey("validaciones.id", ondelete="SET NULL"), nullable=True)
+    actualizado_en = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    usuario = relationship("Usuario", backref="validacion_borrador")
+
+
 class Correccion(Base):
     __tablename__ = "correcciones"
 

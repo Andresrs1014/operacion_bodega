@@ -64,7 +64,7 @@ HORA_INICIO_TURNO = 6   # 6am
 HORA_FIN_TURNO    = 17  # 5pm
 
 
-def rand_time_in_day(d: date, hora_base: int = None) -> datetime:
+def rand_time_in_day(d: date, hora_base: int = 0) -> datetime:
     hora = hora_base if hora_base else random.randint(HORA_INICIO_TURNO, HORA_FIN_TURNO - 1)
     minuto = random.randint(0, 59)
     segundo = random.randint(0, 59)
