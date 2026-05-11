@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
 from routers import auth, usuarios, empaque, validacion, kpis, reportes
 from scheduler import start_scheduler, stop_scheduler
+from migration_add_label_snapshot import up as migrate_label_snapshot
 import models  # noqa: F401 — registra todos los modelos en Base
 
 Base.metadata.create_all(bind=engine)
@@ -13,6 +14,7 @@ Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    migrate_label_snapshot()
     start_scheduler()
     yield
     stop_scheduler()

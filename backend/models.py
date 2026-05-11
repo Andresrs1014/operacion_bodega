@@ -144,6 +144,7 @@ class Validacion(Base):
     )
     observaciones = Column(Text)
     cerrado_con_novedades = Column(Boolean, default=False)
+    label_snapshot = Column(Text, nullable=True)
 
     pedido = relationship("Pedido", back_populates="validaciones")
     validador = relationship("Usuario", back_populates="validaciones_hechas", foreign_keys=[id_validador])

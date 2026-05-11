@@ -93,12 +93,12 @@ const VALIDACION_AUX = {
     async refreshHistorial() {
         const tbody = document.getElementById('historial-validaciones-body');
         if (!tbody) return;
-        tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-400 text-xs">Cargando…</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400 text-xs">Cargando…</td></tr>';
         try {
             const rows = await api.getMisValidaciones(40);
             if (!rows.length) {
                 tbody.innerHTML =
-                    '<tr><td colspan="5" class="py-6 text-center text-slate-400 text-xs">Sin validaciones cerradas aún.</td></tr>';
+                    '<tr><td colspan="6" class="py-6 text-center text-slate-400 text-xs">Sin validaciones cerradas aún.</td></tr>';
                 return;
             }
             tbody.innerHTML = rows
@@ -113,13 +113,21 @@ const VALIDACION_AUX = {
                         <td class="py-2 px-2 text-xs">${fin}</td>
                         <td class="py-2 px-2 text-center text-xs">${st}</td>
                         <td class="py-2 px-2 text-center font-mono">${r.total_unidades}</td>
+                        <td class="py-2 px-2 text-center">
+                            <button type="button"
+                                onclick="reprintLabelFromHistory(${r.id})"
+                                class="text-slate-400 hover:text-brand-red transition-colors"
+                                title="Reimprimir etiqueta UM">
+                                <i class="fa-solid fa-print text-xs"></i>
+                            </button>
+                        </td>
                         <td class="py-2 px-2 text-center text-[10px] text-slate-400">#${r.id}</td>
                     </tr>`;
                 })
                 .join('');
         } catch {
             tbody.innerHTML =
-                '<tr><td colspan="5" class="py-4 text-center text-red-400 text-xs">Error al cargar historial</td></tr>';
+                '<tr><td colspan="6" class="py-4 text-center text-red-400 text-xs">Error al cargar historial</td></tr>';
         }
     },
 

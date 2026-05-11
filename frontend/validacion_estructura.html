@@ -18,6 +18,17 @@
 
     <link rel="stylesheet" href="css/style_validacion.css" />
     <link rel="stylesheet" href="css/print-zebra-zt230.css" />
+    <style>
+        @media print {
+            body.print-reprint-active > *:not(#reprint-area) { display: none !important; }
+            body.print-reprint-active #reprint-area {
+                display: block !important;
+                position: absolute;
+                top: 0; left: 0;
+                width: 102mm;
+            }
+        }
+    </style>
     <script src="js/api.js"></script>
     <script src="js/nav.js"></script>
 </head>
@@ -155,6 +166,7 @@
                                     <th class="text-left py-2 px-2">Cierre</th>
                                     <th class="text-center py-2 px-2">Estado</th>
                                     <th class="text-center py-2 px-2">Und.</th>
+                                    <th class="text-center py-2 px-2">UM</th>
                                     <th class="text-center py-2 px-2">Id</th>
                                 </tr>
                             </thead>
@@ -330,6 +342,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Área de reimpresión de etiqueta desde historial -->
+    <div id="reprint-area" class="label-card hidden"></div>
 
     <script src="js/validacion_aux.js"></script>
     <script src="js/script_validacion.js"></script>

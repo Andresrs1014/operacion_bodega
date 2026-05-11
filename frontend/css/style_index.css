@@ -17,18 +17,21 @@ body {
     flex-direction: column;
 }
 
-.location-row { 
-    width: 100mm; 
-    height: 80mm; 
-    background: white; 
-    border: 1px solid #ccc; 
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
-    display: flex; 
-    flex-direction: column; 
-    padding: 2mm; 
-    position: relative; 
-    font-family: 'Roboto Condensed', sans-serif; 
-    color: black; 
+/* Contenedor etiqueta empaque: mismo tamaño lógico que Zebra 4×6" (ver print-zebra-zt230.css) */
+.label-container {
+    width: 102mm;
+    min-height: 152mm;
+    max-width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 2mm;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Roboto Condensed', sans-serif;
+    color: #000;
 }
 
 .info-section { 
@@ -68,11 +71,14 @@ body {
     line-height: 0.9; 
 } 
 
-.location-row { 
-    display: flex; 
-    border-bottom: 2px solid #000; 
-    padding-bottom: 1px; 
-    margin-bottom: 1px; 
+.location-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+    border-bottom: 2px solid #000;
+    padding-bottom: 1px;
+    margin-bottom: 1px;
 }
 .loc-col { 
     padding-left: 2px; 
