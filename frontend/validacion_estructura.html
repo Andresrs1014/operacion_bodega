@@ -176,6 +176,18 @@
             </div>
         </div>
 
+        <!-- Scan feedback flash (overlay global) -->
+        <div id="scan-flash" class="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none hidden">
+            <div id="scan-flash-card" class="rounded-2xl shadow-2xl px-8 py-6 text-center transform scale-90 opacity-0 transition-all duration-200 max-w-xs w-full mx-4"
+                 style="background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);">
+                <div id="sf-ref" class="text-white text-sm font-mono tracking-widest mb-1 truncate"></div>
+                <div id="sf-units" class="text-white font-black leading-none mb-2" style="font-size: clamp(3rem, 15vw, 6rem)"></div>
+                <div id="sf-label" class="text-slate-400 text-xs uppercase tracking-widest mb-3">unidades</div>
+                <div id="sf-progress" class="text-white text-lg font-bold"></div>
+                <div id="sf-status" class="text-xs font-bold mt-1 uppercase tracking-wider"></div>
+            </div>
+        </div>
+
         <!-- VISTA 5: VALIDACIÓN -->
         <div id="view-validate" class="hidden h-full flex flex-col print:hidden">
             <div class="bg-white px-4 py-2 shadow-sm mb-3 flex justify-between items-center border-l-4 border-brand-red text-xs">
@@ -196,6 +208,19 @@
                     <div class="bg-slate-800 p-6 text-center rounded-t">
                         <p class="text-slate-400 text-xs font-bold mb-2 uppercase tracking-widest">Escanear Referencia</p>
                         <input type="text" id="scan-input" class="scan-input w-full text-center font-black text-4xl py-3 rounded uppercase" placeholder="..." autocomplete="off">
+                    </div>
+                    <!-- Último pistoleo persistente -->
+                    <div id="last-scan-bar" class="hidden mx-2 mb-2 rounded-lg px-3 py-2 flex items-center gap-3 border-2">
+                        <i class="fa-solid fa-barcode text-slate-500 text-lg"></i>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[10px] text-slate-500 uppercase tracking-wider">Último pistoleo</div>
+                            <div id="lsb-ref" class="font-mono font-bold text-sm text-slate-800 truncate"></div>
+                        </div>
+                        <div class="text-right">
+                            <div id="lsb-units" class="font-black text-2xl leading-none"></div>
+                            <div class="text-[9px] text-slate-500 uppercase">und</div>
+                        </div>
+                        <div id="lsb-progress" class="text-right text-xs font-bold text-slate-600"></div>
                     </div>
                     <div id="scan-log" class="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50 text-sm font-mono border-t border-slate-200"></div>
                 </div>
@@ -250,7 +275,7 @@
                     <div id="label-copy-1" class="label-card shadow-xl"></div>
                     
                     <!-- COPIA 2 (MERCANCÍA) -->
-                    <div id="label-copy-2" class="label-card shadow-xl mt-8 print:mt-10 border-t-4 border-dashed border-slate-300 print:border-none"></div>
+                    <div id="label-copy-2" class="label-card shadow-xl mt-8 print:mt-10 border-t-4 border-dashed border-slate-300 print:border-none print:hidden"></div>
                     
                     <div class="powered-by print:block hidden">Powered and Designed by Laura Peláez for Logimat</div>
                 </div>

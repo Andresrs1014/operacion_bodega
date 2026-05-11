@@ -1314,6 +1314,10 @@ function initCityDeptData() {
 function resetView(target) {
     document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
     document.getElementById('view-' + target).classList.remove('hidden');
+    // Ocultar paneles de scan al salir de la vista de validación
+    document.getElementById('last-scan-bar')?.classList.add('hidden');
+    document.getElementById('scan-flash')?.classList.add('hidden');
+    if (_scanFlashTimer) { clearTimeout(_scanFlashTimer); _scanFlashTimer = null; }
 }
 
 function logout() {
@@ -1732,6 +1736,80 @@ function bindObservationsDraft() {
 // LÓGICA DE ESCANEO Y VALIDACIÓN
 // ==========================================
 
+// ==========================================
+// SCAN FLASH FEEDBACK
+// ==========================================
+
+let _scanFlashTimer = null;
+
+/**
+ * Muestra un panel visual grande y vistoso tras cada pistoleo.
+ * Aparece inmediatamente, se auto-oculta a los 2.5s y actualiza
+ * la barra persistente de "último pistoleo".
+ * @param {string} ref      - Código de referencia escaneado
+ * @param {number} qty      - Unidades sumadas en este pistoleo
+ * @param {number} scanned  - Total acumulado para esta referencia
+ * @param {number} expected - Total esperado para esta referencia (0 si no solicitado)
+ * @param {boolean} isError - true si el código no estaba en el pedido
+ */
+function showScanFlash(ref, qty, scanned, expected, isError) {
+    const flash = document.getElementById('scan-flash');
+    const card = document.getElementById('scan-flash-card');
+    if (!flash || !card) return;
+
+    const isOver = scanned > expected && expected > 0;
+    const isDone = scanned === expected && expected > 0;
+    const bgColor   = isError ? '#7f1d1d' : isOver ? '#78350f' : isDone ? '#14532d' : '#1e3a5f';
+    const unitColor = isError ? '#fca5a5' : isOver ? '#fcd34d' : isDone ? '#86efac' : '#93c5fd';
+    const statusText = isError ? '⚠ NO SOLICITADO' : isOver ? '⚠ EXCESO' : isDone ? '✓ COMPLETO' : '';
+    const progress = expected > 0 ? `${scanned} / ${expected}` : `${scanned}`;
+
+    document.getElementById('sf-ref').textContent = ref;
+    const sfUnits = document.getElementById('sf-units');
+    sfUnits.textContent = `+${qty}`;
+    sfUnits.style.color = unitColor;
+    document.getElementById('sf-progress').textContent = progress;
+    const sfStatus = document.getElementById('sf-status');
+    sfStatus.textContent = statusText;
+    sfStatus.style.color = unitColor;
+    card.style.background = bgColor;
+
+    // Barra persistente "último pistoleo"
+    const bar = document.getElementById('last-scan-bar');
+    if (bar) {
+        bar.classList.remove('hidden');
+        bar.style.borderColor       = isError ? '#ef4444' : isOver ? '#f59e0b' : isDone ? '#22c55e' : '#3b82f6';
+        bar.style.backgroundColor   = isError ? '#fef2f2' : isOver ? '#fffbeb' : isDone ? '#f0fdf4' : '#eff6ff';
+        document.getElementById('lsb-ref').textContent = ref;
+        const lsbUnits = document.getElementById('lsb-units');
+        lsbUnits.textContent  = `+${qty}`;
+        lsbUnits.style.color  = isError ? '#ef4444' : isOver ? '#f59e0b' : isDone ? '#22c55e' : '#3b82f6';
+        document.getElementById('lsb-progress').textContent = expected > 0 ? `${scanned}/${expected}` : '';
+    }
+
+    // Mostrar con animación de entrada
+    flash.classList.remove('hidden');
+    card.style.transition = 'none';
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.9)';
+    requestAnimationFrame(() => {
+        card.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+        requestAnimationFrame(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'scale(1)';
+        });
+    });
+
+    // Auto-ocultar a los 2.5s
+    if (_scanFlashTimer) clearTimeout(_scanFlashTimer);
+    _scanFlashTimer = setTimeout(() => {
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        setTimeout(() => flash.classList.add('hidden'), 200);
+        _scanFlashTimer = null;
+    }, 2500);
+}
+
 /**
  * Procesa el código escaneado durante la validación
  * - Si el item existe en el pedido, incrementa su contador por la unidad de empaque
@@ -1751,6 +1829,7 @@ function processScan(code) {
         item.scanned += qty;
         logDiv.innerHTML = `<div class="text-green-700 border-b py-1 font-bold"><i class="fa-solid fa-check"></i> ${code} (+${qty})</div>` + logDiv.innerHTML;
         playTone(item.scanned > item.expected ? 200 : 600, item.scanned > item.expected ? 'sawtooth' : 'sine');
+        showScanFlash(code, qty, item.scanned, item.expected, false);
     } else {
         let extra = app.orderData.find(i => i.ref === code && i.isExtra);
         if (extra) extra.scanned++;
@@ -1765,6 +1844,7 @@ function processScan(code) {
         });
         playTone(100, 'square');
         logDiv.innerHTML = `<div class="text-red-600 font-bold border-b py-1"><i class="fa-solid fa-ban"></i> ${code} (ERROR)</div>` + logDiv.innerHTML;
+        showScanFlash(code, 1, extra ? extra.scanned : 1, 0, true);
     }
     renderTable();
     VALIDACION_AUX.scheduleDraftSave(app);
@@ -1886,6 +1966,9 @@ async function finishValidation(hasNews) {
 
     document.getElementById('view-validate').classList.add('hidden');
     document.getElementById('view-label').classList.remove('hidden');
+    document.getElementById('last-scan-bar')?.classList.add('hidden');
+    document.getElementById('scan-flash')?.classList.add('hidden');
+    if (_scanFlashTimer) { clearTimeout(_scanFlashTimer); _scanFlashTimer = null; }
 
     const labelContent = generateLabelHTML(hasNews);
     document.getElementById('label-copy-1').innerHTML = labelContent;
@@ -1909,15 +1992,6 @@ function generateLabelHTML(hasNews) {
     const status = hasNews ? "CERRADO CON NOVEDADES DE ALISTAMIENTO" : "PERFECTO - OK";
     const statusClass = hasNews ? "text-brand-red" : "text-green-700";
 
-    let correctionsHTML = '';
-    if (hasNews && app.corrections.length > 0) {
-        correctionsHTML = `<div class="p-4 bg-white border-t-2 border-black text-xs"><h4 class="font-bold uppercase">Historial Novedades:</h4><ul class="list-disc pl-4 font-mono">`;
-        app.corrections.forEach(c => correctionsHTML += `<li>${c.log}</li>`);
-        correctionsHTML += `</ul></div>`;
-    }
-
-    let obsHTML = app.observations ? `<div class="p-4 bg-white border-t-2 border-black text-xs obs-box"><h4 class="font-bold uppercase">Observaciones:</h4><p class="font-mono">${app.observations}</p></div>` : '';
-
     return `
         <div class="label-header"><h2 class="font-black text-2xl uppercase">Constancia de Validación</h2><div class="text-3xl font-gotham tracking-tighter">L<i class="fa-solid fa-arrows-spin text-black mx-1"></i>GIMAT</div></div>
         <div class="label-grid text-sm text-slate-900">
@@ -1933,8 +2007,6 @@ function generateLabelHTML(hasNews) {
             <div class="label-row"><div class="label-key">DEPARTAMENTO</div><div class="label-val uppercase font-bold">${app.clientInfo.dept}</div></div>
             <div class="label-row"><div class="label-key">ESTADO</div><div class="label-val font-black uppercase text-lg ${statusClass}" id="lbl-status">${status}</div></div>
         </div>
-        ${obsHTML}
-        ${correctionsHTML}
     `;
 }
 
