@@ -29,7 +29,7 @@
 
 - Hoja **`frontend/css/print-zebra-zt230.css`**: `@page` orientado a **4"×6"** (~102×152 mm), uso típico ZT-203 dpi.
 - **Validación:** botón imprime con clase `print-validation-active` en `<body>` y solo expone `#print-area`.
-- **Empaque:** usa cola `#finalPrintQueue` cuando **no** hay esa clase (comportamiento anterior, con nuevo tamaño de página).
+- **Empaque:** cola `#finalPrintQueue`; **`style_index.css`** define `.label-container` en **102×152 mm** (consistente con `@page`). La fila ciudad/depto/tel (`.location-row`) va en **fila horizontal**, no en el bloque legacy 100×80 mm que desalineaba la UM respecto a la ZT-230.
 - **No** aplica a exportes Excel ni vistas solo web (p. ej. gráficas del dashboard).
 
 ## Docker / BD

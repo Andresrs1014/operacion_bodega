@@ -165,6 +165,10 @@ const api = {
         return this.request("DELETE", "/validacion/mi-borrador");
     },
 
+    async getLabelSnapshot(validacionId) {
+        return this.request("GET", `/validacion/${validacionId}/label-snapshot`);
+    },
+
     async cancelarAlistamiento(alistamientoId, horaFin = null) {
         return this.request("PATCH", `/validacion/alistamiento/${alistamientoId}/cancelar`, {
             hora_fin: horaFin,

@@ -115,3 +115,18 @@ class ValidacionBorradorResponse(BaseModel):
     payload: dict
     id_validacion: Optional[int] = None
     actualizado_en: datetime
+
+
+class LabelSnapshotOut(BaseModel):
+    id: int
+    numero_pedido: str
+    cliente: str
+    direccion: str
+    ciudad: str
+    departamento: str
+    picker: str
+    validador: str
+    hora_inicio: datetime
+    hora_fin: Optional[datetime] = None
+    total_unidades: int
+    estado: str

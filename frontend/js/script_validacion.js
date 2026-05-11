@@ -1950,6 +1950,15 @@ async function finishValidation(hasNews) {
                 estado: hasNews ? "CON_NOVEDADES" : "OK",
                 observaciones: app.observations || null,
                 cerrado_con_novedades: hasNews,
+                label_snapshot: {
+                    numero_pedido: app.orderId,
+                    cliente: app.clientInfo?.name || "—",
+                    direccion: app.clientInfo?.address || "—",
+                    ciudad: app.clientInfo?.city || "—",
+                    departamento: app.clientInfo?.dept || "—",
+                    picker: app.picker || "—",
+                    validador: app.user?.name || "—",
+                },
             });
         } catch (e) {
             console.warn("No se pudo cerrar validación en backend:", e.message);
@@ -2008,6 +2017,47 @@ function generateLabelHTML(hasNews) {
             <div class="label-row"><div class="label-key">ESTADO</div><div class="label-val font-black uppercase text-lg ${statusClass}" id="lbl-status">${status}</div></div>
         </div>
     `;
+}
+
+async function reprintLabelFromHistory(validacionId) {
+    let snap;
+    try {
+        snap = await api.getLabelSnapshot(validacionId);
+    } catch (e) {
+        VALIDACION_AUX.showToast('No se pudo obtener datos de la etiqueta: ' + e.message, 'error');
+        return;
+    }
+
+    const hasNews = snap.estado === 'CON_NOVEDADES';
+    const status = hasNews ? 'CERRADO CON NOVEDADES DE ALISTAMIENTO' : 'PERFECTO - OK';
+    const statusClass = hasNews ? 'text-brand-red' : 'text-green-700';
+    const fmtDate = (iso) => iso ? new Date(iso).toLocaleString() : '—';
+
+    const html = `
+        <div class="label-header"><h2 class="font-black text-2xl uppercase">Constancia de Validación</h2><div class="text-3xl font-gotham tracking-tighter">L<i class="fa-solid fa-arrows-spin text-black mx-1"></i>GIMAT</div></div>
+        <div class="label-grid text-sm text-slate-900">
+            <div class="label-row"><div class="label-key">N° PEDIDO</div><div class="label-val py-6 justify-center"><span class="big-order">${snap.numero_pedido}</span></div></div>
+            <div class="label-row"><div class="label-key">CLIENTE</div><div class="label-val text-xl font-bold uppercase">${snap.cliente}</div></div>
+            <div class="label-row"><div class="label-key">ALISTADO POR</div><div class="label-val uppercase font-bold">${snap.picker}</div></div>
+            <div class="label-row"><div class="label-key">VALIDADO POR</div><div class="label-val uppercase font-bold">${snap.validador}</div></div>
+            <div class="label-row"><div class="label-key">F/H INI VALIDACIÓN</div><div class="label-val font-mono text-xs">${fmtDate(snap.hora_inicio)}</div></div>
+            <div class="label-row"><div class="label-key">F/H FIN VALIDACIÓN</div><div class="label-val font-mono font-bold text-xs">${fmtDate(snap.hora_fin)}</div></div>
+            <div class="label-row"><div class="label-key">TOTAL UNIDADES</div><div class="label-val text-2xl font-black">${snap.total_unidades}</div></div>
+            <div class="label-row"><div class="label-key">DIRECCIÓN</div><div class="label-val uppercase text-xs">${snap.direccion}</div></div>
+            <div class="label-row"><div class="label-key">CIUDAD</div><div class="label-val uppercase font-bold">${snap.ciudad}</div></div>
+            <div class="label-row"><div class="label-key">DEPARTAMENTO</div><div class="label-val uppercase font-bold">${snap.departamento}</div></div>
+            <div class="label-row"><div class="label-key">ESTADO</div><div class="label-val font-black uppercase text-lg ${statusClass}">${status}</div></div>
+        </div>
+    `;
+
+    const el = document.getElementById('reprint-area');
+    if (!el) return;
+    el.innerHTML = html;
+
+    document.body.classList.add('print-reprint-active');
+    const cleanup = () => document.body.classList.remove('print-reprint-active');
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.print();
 }
 
 // ==========================================

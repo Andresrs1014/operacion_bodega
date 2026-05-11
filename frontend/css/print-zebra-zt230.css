@@ -49,9 +49,21 @@
     body:not(.print-validation-active) .label-container {
         width: calc(var(--zebra-page-w) - 2 * var(--zebra-margin));
         min-height: calc(var(--zebra-page-h) - 2 * var(--zebra-margin));
+        max-height: calc(var(--zebra-page-h) - 2 * var(--zebra-margin));
         border: none !important;
         box-shadow: none !important;
         padding: 2mm !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Evita restos de CSS legacy (p. ej. fila ciudad a 80 mm de alto) */
+    body:not(.print-validation-active) #finalPrintQueue .location-row {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        flex-direction: row !important;
+        flex-shrink: 0;
     }
 
     /* ── VALIDACIÓN constancia (#print-area) ── */

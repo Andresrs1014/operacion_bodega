@@ -9,6 +9,7 @@ from database import get_db
 from dependencies import get_current_user
 from models import Alistamiento, Correccion, Pedido, Usuario, Validacion, ValidacionBorrador
 from schemas import (
+    LabelSnapshotOut,
     MisValidacionOut,
     SupervisorFirmaOut,
     UsuarioOut,
@@ -48,6 +49,7 @@ class ValidacionClose(BaseModel):
     estado: str  # "OK" | "CON_NOVEDADES"
     observaciones: Optional[str] = None
     cerrado_con_novedades: bool = False
+    label_snapshot: Optional[dict] = None
 
 
 class CorreccionCreate(BaseModel):
@@ -336,6 +338,10 @@ def cerrar_validacion(
     val.observaciones = body.observaciones
     val.cerrado_con_novedades = body.cerrado_con_novedades
 
+    if body.label_snapshot:
+        import json
+        val.label_snapshot = json.dumps(body.label_snapshot, ensure_ascii=False)
+
     if body.estado == "OK":
         val.pedido.estado = "VALIDADO"
     elif body.estado == "CON_NOVEDADES":
@@ -375,3 +381,59 @@ def registrar_correccion(
     db.add(correccion)
     db.commit()
     return {"ok": True}
+
+
+@router.get("/{validacion_id}/label-snapshot", response_model=LabelSnapshotOut)
+def get_label_snapshot(
+    validacion_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Devuelve el snapshot de etiqueta guardado al cerrar la validación."""
+    import json as _json
+    val = db.query(Validacion).filter(Validacion.id == validacion_id).first()
+    if not val:
+        raise HTTPException(status_code=404, detail="Validación no encontrada.")
+    if val.id_validador != current_user.id and current_user.rol not in ("admin", "supervisor"):
+        raise HTTPException(status_code=403, detail="No autorizado.")
+
+    num = val.pedido.numero_pedido if val.pedido else "—"
+
+    # Si hay snapshot guardado, usarlo
+    if val.label_snapshot:
+        try:
+            snap = _json.loads(val.label_snapshot)
+            return LabelSnapshotOut(
+                id=val.id,
+                numero_pedido=snap.get("numero_pedido", num),
+                cliente=snap.get("cliente", "—"),
+                direccion=snap.get("direccion", "—"),
+                ciudad=snap.get("ciudad", "—"),
+                departamento=snap.get("departamento", "—"),
+                picker=snap.get("picker", "—"),
+                validador=snap.get("validador", "—"),
+                hora_inicio=val.hora_inicio,
+                hora_fin=val.hora_fin,
+                total_unidades=val.total_unidades or 0,
+                estado=val.estado,
+            )
+        except Exception:
+            pass
+
+    # Fallback para validaciones antiguas sin snapshot
+    validador_nombre = val.validador.nombre if val.validador else "—"
+    alistador_nombre = val.alistador.nombre if val.alistador else "—"
+    return LabelSnapshotOut(
+        id=val.id,
+        numero_pedido=num,
+        cliente="—",
+        direccion="—",
+        ciudad="—",
+        departamento="—",
+        picker=alistador_nombre,
+        validador=validador_nombre,
+        hora_inicio=val.hora_inicio,
+        hora_fin=val.hora_fin,
+        total_unidades=val.total_unidades or 0,
+        estado=val.estado,
+    )
