@@ -1,0 +1,108 @@
+/**
+ * Zebra ZT-230 — etiquetas 4"×6" (~102×152 mm), 203 dpi.
+ * Validación: añadir clase `print-validation-active` al body antes de `window.print()`.
+ * Empaque: usa cola `#finalPrintQueue` (sin esa clase en body).
+ * Dashboard / Excel: no importan esta hoja.
+ */
+:root {
+    --zebra-page-w: 102mm;
+    --zebra-page-h: 152mm;
+    --zebra-margin: 2mm;
+}
+
+@media print {
+    @page {
+        size: var(--zebra-page-w) var(--zebra-page-h);
+        margin: var(--zebra-margin);
+    }
+
+    html, body {
+        background: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* ── EMPAQUE (solo si NO es impresión de constancia validación) ── */
+    body:not(.print-validation-active) > *:not(#finalPrintQueue) {
+        display: none !important;
+    }
+    body:not(.print-validation-active) #finalPrintQueue {
+        display: block !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: var(--zebra-page-w);
+    }
+    body:not(.print-validation-active) .print-page {
+        width: var(--zebra-page-w);
+        min-height: var(--zebra-page-h);
+        page-break-after: always;
+        break-after: page;
+        position: relative;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+    }
+    body:not(.print-validation-active) .print-page:last-child {
+        page-break-after: auto;
+    }
+    body:not(.print-validation-active) .label-container {
+        width: calc(var(--zebra-page-w) - 2 * var(--zebra-margin));
+        min-height: calc(var(--zebra-page-h) - 2 * var(--zebra-margin));
+        border: none !important;
+        box-shadow: none !important;
+        padding: 2mm !important;
+    }
+
+    /* ── VALIDACIÓN constancia (#print-area) ── */
+    body.print-validation-active * {
+        visibility: hidden;
+    }
+    body.print-validation-active #print-area,
+    body.print-validation-active #print-area * {
+        visibility: visible;
+    }
+    body.print-validation-active #print-area {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: var(--zebra-page-w);
+    }
+    body.print-validation-active .label-card {
+        width: calc(var(--zebra-page-w) - 2 * var(--zebra-margin));
+        min-height: auto;
+        margin: 0 auto 2mm !important;
+        page-break-after: always;
+        break-after: page;
+        border: 2px solid #000 !important;
+        box-sizing: border-box;
+    }
+    body.print-validation-active .label-card:last-of-type {
+        page-break-after: auto;
+    }
+    body.print-validation-active .label-grid {
+        grid-template-columns: 28mm 1fr;
+    }
+    body.print-validation-active .label-key {
+        background: transparent !important;
+        font-size: 7pt !important;
+        padding: 1.5mm !important;
+    }
+    body.print-validation-active .label-val {
+        font-size: 9pt !important;
+        padding: 1.5mm !important;
+    }
+    body.print-validation-active .big-order {
+        font-size: 26pt !important;
+    }
+    body.print-validation-active .label-header h2 {
+        font-size: 11pt !important;
+    }
+    body.print-validation-active .print\\:hidden {
+        display: none !important;
+    }
+    body.print-validation-active .powered-by {
+        visibility: visible;
+        font-size: 6pt !important;
+    }
+}

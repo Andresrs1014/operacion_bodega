@@ -91,43 +91,4 @@ body {
     letter-spacing: 1px;
 }
 
-/* IMPRESIÓN */
-@media print {
-    body * { visibility: hidden; }
-    #print-area, #print-area * { visibility: visible; }
-    #print-area {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-    }
-    .label-card {
-        margin-bottom: 30px;
-        border: 3px solid #000;
-    }
-    .label-key {
-        background: transparent !important;
-        font-size: 12pt !important;
-    }
-    .label-val {
-        font-size: 16pt !important;
-    }
-    .big-order {
-        font-size: 40pt !important;
-    }
-    .print\:hidden {
-        display: none !important;
-    }
-    .obs-box {
-        font-size: 14pt !important;
-    }
-    .powered-by {
-        visibility: visible;
-        position: fixed;
-        bottom: 5px;
-        width: 100%;
-        text-align: center;
-        font-size: 8pt;
-        color: #000;
-    }
-}
+/* Impresión detallada: ver css/print-zebra-zt230.css (Zebra ZT-230) */

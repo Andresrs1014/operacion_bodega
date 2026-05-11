@@ -82,3 +82,36 @@ class SecuenciaOut(BaseModel):
     prefijo_fecha: str
     ultimo_numero: int
     siguiente_codigo: str
+
+
+# ── VALIDACIÓN (API módulo validación + borradores) ──────────────────────────
+
+class SupervisorFirmaOut(BaseModel):
+    """Perfil mínimo para relacionar firma supervisora ↔ id en correcciones."""
+
+    id: int
+    nombre: str
+
+    model_config = {"from_attributes": True}
+
+
+class MisValidacionOut(BaseModel):
+    id: int
+    numero_pedido: str
+    hora_inicio: datetime
+    hora_fin: Optional[datetime] = None
+    estado: str
+    total_unidades: int = 0
+
+
+class ValidacionBorradorUpsert(BaseModel):
+    numero_pedido: str
+    payload: dict
+    id_validacion: Optional[int] = None
+
+
+class ValidacionBorradorResponse(BaseModel):
+    numero_pedido: str
+    payload: dict
+    id_validacion: Optional[int] = None
+    actualizado_en: datetime

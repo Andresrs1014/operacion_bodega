@@ -9,7 +9,7 @@ const PIN_CODE = "2025";
 // Formato: código de supervisor => nombre completo
 const SUPERVISORS = {
     '*197501': 'JUVENAL GALINDO',
-    '*197502': 'LAURA PELAEZ'
+    '*197502': 'EDGAR GARCIA',
 };
 
 // Email de destino para reportes de validación
@@ -1185,7 +1185,8 @@ let app = {
     pendingDeleteRef: null,      // Referencia pendiente de corrección
     observations: "",            // Observaciones de la validación
     supervisorMode: null,        // 'correction' o 'closure'
-    supervisorAuthorized: false  // Estado de sesión de supervisor (Single Sign-On)
+    supervisorAuthorized: false, // Estado de sesión de supervisor (Single Sign-On)
+    lastSupervisorId: null       // último supervisor que firmó (persistir correcciones / KPI)
 };
 
 /**
@@ -1211,7 +1212,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initEvents();
     initCityDeptData();
+    initOrderTableDelegation();
 });
+
+function initOrderTableDelegation() {
+    const tbody = document.getElementById('order-table-body');
+    if (!tbody) return;
+    tbody.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-correction-ref]');
+        if (btn) {
+            const ref = btn.getAttribute('data-correction-ref');
+            if (ref) openSupervisor('correction', ref);
+        }
+    });
+}
+
+function printValidationZebra() {
+    document.body.classList.add('print-validation-active');
+    const done = () => document.body.classList.remove('print-validation-active');
+    window.addEventListener('afterprint', done, { once: true });
+    window.print();
+}
+
+async function resumeValidationDraft() {
+    let bd;
+    try {
+        bd = await api.getMiBorrador();
+    } catch (e) {
+        if (e.status === 404) VALIDACION_AUX.showToast('No hay borrador guardado.', 'error');
+        else VALIDACION_AUX.showToast(e.message || 'Error', 'error');
+        return;
+    }
+    VALIDACION_AUX.applyDraftToApp(bd, app);
+    VALIDACION_AUX.hideDraftBanner();
+    document.querySelectorAll('[id^="view-"]').forEach((el) => el.classList.add('hidden'));
+    document.getElementById('view-validate').classList.remove('hidden');
+    document.getElementById('info-order-id').textContent = app.orderId;
+    document.getElementById('info-client').textContent = app.clientInfo.name;
+    document.getElementById('info-picker').textContent = app.picker || '—';
+    document.getElementById('info-start-time').textContent =
+        app.startTime ? app.startTime.toLocaleTimeString() : '—';
+    renderTable();
+    bindObservationsDraft();
+    VALIDACION_AUX.scheduleDraftSave(app);
+    document.getElementById('scan-input').focus();
+}
+
+async function resolveIdAlistadorPorNombre(nombrePicker) {
+    if (!nombrePicker) return null;
+    try {
+        const empleados = await api.getEmpleados();
+        const t = VALIDACION_AUX.normalizeNombre(nombrePicker);
+        const m = empleados.find((e) => VALIDACION_AUX.normalizeNombre(e.nombre) === t);
+        return m ? m.id : null;
+    } catch {
+        return null;
+    }
+}
 
 /**
  * Configura los event listeners principales del sistema
@@ -1282,7 +1339,7 @@ function returnToValidationStart() {
 function checkPin() {
     if (document.getElementById('input-pin').value === PIN_CODE) resetView('menu');
     else {
-        alert("PIN INCORRECTO");
+        VALIDACION_AUX.showToast('PIN incorrecto', 'error');
         document.getElementById('input-pin').value = '';
     }
 }
@@ -1319,17 +1376,19 @@ async function attemptLogin() {
     // Esta función solo activa la vista de carga de Excel.
     const user = api.getUser();
     if (!user) {
-        // Sesión inválida — redirigir al login
         api.logout();
         return;
     }
     app.user = { id: user.cedula, name: user.nombre };
 
-    // Ocultar pantalla de cedula (en caso de que se muestre por alguna razón)
     document.getElementById('view-login-validator').classList.add('hidden');
     document.getElementById('view-upload').classList.remove('hidden');
 
     showFileStatus(app.fullExcel && app.fullExcel.length > 0);
+
+    await VALIDACION_AUX.loadSupervisoresFirmaCache();
+    VALIDACION_AUX.refreshHistorial().catch(() => {});
+    VALIDACION_AUX.probeBorradorOnUpload().catch(() => {});
 }
 
 // ==========================================
@@ -1489,9 +1548,9 @@ function handleExcelUpload(input) {
 
             document.getElementById('current-file-name').textContent = input.files[0].name;
             showFileStatus(true);
+            VALIDACION_AUX.refreshHistorial().catch(() => {});
         } catch (err) {
-            alert("Error archivo");
-            location.reload();
+            VALIDACION_AUX.showToast('Error al leer el archivo Excel', 'error');
         }
     };
     reader.readAsBinaryString(input.files[0]);
@@ -1518,7 +1577,10 @@ function resetExcelData() {
  */
 async function checkPickerAndStart() {
     const orderId = document.getElementById('input-order-id-val').value.trim().toUpperCase();
-    if (!orderId) return alert("DIGITE PEDIDO");
+    if (!orderId) {
+        VALIDACION_AUX.showToast('Digite el número de pedido', 'error');
+        return;
+    }
 
     // Buscar alistador en historial local
     const history = JSON.parse(localStorage.getItem('brakepak_picking_history') || "[]");
@@ -1551,7 +1613,10 @@ async function checkPickerAndStart() {
  */
 async function confirmManualPicker() {
     const val = document.getElementById('manual-picker-select').value;
-    if (!val) return alert("Seleccione un funcionario");
+    if (!val) {
+        VALIDACION_AUX.showToast('Seleccione un funcionario', 'error');
+        return;
+    }
     app.picker = val;
     document.getElementById('modal-picker-select').classList.add('hidden');
     document.getElementById('modal-picker-select').classList.remove('flex');
@@ -1571,6 +1636,7 @@ async function startValidation(orderId) {
     app.corrections = [];
     app.observations = "";
     app.supervisorAuthorized = false;
+    app.lastSupervisorId = null;
     app.validacionId = null;
 
     document.getElementById('input-observations').value = "";
@@ -1589,7 +1655,10 @@ async function startValidation(orderId) {
     const kCity = keys.find(k => k.match(/ciudad|municipio/i)) || keys[4];
 
     const rows = app.fullExcel.filter(r => String(r[kOrder]).trim() == orderId);
-    if (rows.length === 0) return alert("Pedido no encontrado en Excel");
+    if (rows.length === 0) {
+        VALIDACION_AUX.showToast('Pedido no encontrado en Excel', 'error');
+        return;
+    }
 
     const r = rows[0];
     app.clientInfo.name = kClient ? r[kClient] : "---";
@@ -1628,7 +1697,8 @@ async function startValidation(orderId) {
 
     // Registrar validación en el backend
     try {
-        const result = await api.iniciarValidacion(orderId, app.startTime.toISOString());
+        const idAlist = await resolveIdAlistadorPorNombre(app.picker);
+        const result = await api.iniciarValidacion(orderId, app.startTime.toISOString(), idAlist);
         app.validacionId = result.id;
     } catch (e) {
         console.warn("No se pudo registrar validación en backend:", e.message);
@@ -1644,6 +1714,18 @@ async function startValidation(orderId) {
 
     renderTable();
     document.getElementById('scan-input').focus();
+    bindObservationsDraft();
+    VALIDACION_AUX.scheduleDraftSave(app);
+}
+
+function bindObservationsDraft() {
+    const obs = document.getElementById('input-observations');
+    if (!obs || obs._draftBound) return;
+    obs._draftBound = true;
+    obs.addEventListener('input', () => {
+        app.observations = obs.value.trim().toUpperCase();
+        VALIDACION_AUX.scheduleDraftSave(app);
+    });
 }
 
 // ==========================================
@@ -1685,6 +1767,7 @@ function processScan(code) {
         logDiv.innerHTML = `<div class="text-red-600 font-bold border-b py-1"><i class="fa-solid fa-ban"></i> ${code} (ERROR)</div>` + logDiv.innerHTML;
     }
     renderTable();
+    VALIDACION_AUX.scheduleDraftSave(app);
 }
 
 /**
@@ -1731,7 +1814,11 @@ function renderTable() {
             missing++;
         }
 
-        const deleteBtn = (item.scanned > 0 || item.isExtra) ? `<button onclick="openSupervisor('correction', '${item.ref}')" class="text-slate-300 hover:text-brand-red ml-2"><i class="fa-solid fa-eraser"></i></button>` : '';
+        const atr = VALIDACION_AUX.escapeAttr(item.ref);
+        const deleteBtn =
+            item.scanned > 0 || item.isExtra
+                ? `<button type="button" data-correction-ref="${atr}" class="correction-btn text-slate-300 hover:text-brand-red ml-2"><i class="fa-solid fa-eraser"></i></button>`
+                : '';
 
         tbody.innerHTML += `
             <div class="grid grid-cols-12 ${rowClass} text-xs py-3 px-2 items-center">
@@ -1788,6 +1875,14 @@ async function finishValidation(hasNews) {
             console.warn("No se pudo cerrar validación en backend:", e.message);
         }
     }
+
+    clearTimeout(VALIDACION_AUX.draftSaveTimer);
+    VALIDACION_AUX.draftSaveTimer = null;
+    try {
+        await api.deleteMiBorrador();
+    } catch (_) { /* ignorar si no hay borrador */ }
+
+    VALIDACION_AUX.refreshHistorial().catch(() => {});
 
     document.getElementById('view-validate').classList.add('hidden');
     document.getElementById('view-label').classList.remove('hidden');
@@ -1892,11 +1987,14 @@ function closeSupervisorModal() {
 function checkSupervisorCode() {
     const reason = document.getElementById('supervisor-reason').value;
 
-    if (!reason) return alert("Seleccione la causa");
+    if (!reason) {
+        VALIDACION_AUX.showToast('Seleccione la causa', 'error');
+        return;
+    }
 
     // Si ya está autorizado, procedemos directamente
     if (app.supervisorAuthorized) {
-        processSupervisorAction(reason, "SESIÓN ACTIVA");
+        void processSupervisorAction(reason, "SESIÓN ACTIVA");
         return;
     }
 
@@ -1905,10 +2003,11 @@ function checkSupervisorCode() {
     const supervisorName = SUPERVISORS[code];
 
     if (supervisorName) {
+        app.lastSupervisorId = VALIDACION_AUX.findSupervisorIdByName(supervisorName);
         app.supervisorAuthorized = true; // ACTIVAR SESIÓN
-        processSupervisorAction(reason, supervisorName);
+        void processSupervisorAction(reason, supervisorName);
     } else {
-        alert("Código Incorrecto");
+        VALIDACION_AUX.showToast('Código incorrecto', 'error');
     }
 }
 
@@ -1919,22 +2018,45 @@ function checkSupervisorCode() {
  * @param {string} reason - Razón/causa seleccionada para la acción
  * @param {string} supervisorName - Nombre del supervisor que autorizó
  */
-function processSupervisorAction(reason, supervisorName) {
+async function processSupervisorAction(reason, supervisorName) {
     if (app.supervisorMode === 'correction') {
-        const item = app.orderData.find(i => i.ref === app.pendingDeleteRef);
+        const item = app.orderData.find((i) => i.ref === app.pendingDeleteRef);
+        if (!item) {
+            closeSupervisorModal();
+            return;
+        }
         const sub = item.unit || 1;
         if (item.scanned > 0) item.scanned -= sub;
         app.corrections.push({
-            log: `${app.pendingDeleteRef}: Corrección (-${sub}) - ${reason}`
+            log: `${app.pendingDeleteRef}: Corrección (-${sub}) - ${reason}`,
         });
+        let supId = null;
+        if (supervisorName === 'SESIÓN ACTIVA') supId = app.lastSupervisorId;
+        else supId = VALIDACION_AUX.findSupervisorIdByName(supervisorName);
+        if (!supId) supId = app.lastSupervisorId;
+        if (app.validacionId && supId && app.pendingDeleteRef) {
+            try {
+                await api.registrarCorreccion(app.validacionId, {
+                    referencia_afectada: app.pendingDeleteRef,
+                    cantidad_corregida: Math.abs(sub),
+                    causa: reason,
+                    id_supervisor: supId,
+                });
+            } catch (e) {
+                VALIDACION_AUX.showToast(`Corrección no persistida en servidor: ${e.message}`, 'error');
+            }
+        } else if (app.validacionId && !supId) {
+            VALIDACION_AUX.showToast('No se encontró supervisor en BD (revise datos de usuario).', 'error');
+        }
         closeSupervisorModal();
         renderTable();
+        VALIDACION_AUX.scheduleDraftSave(app);
     } else if (app.supervisorMode === 'closure') {
         app.corrections.push({
-            log: `CIERRE FORZADO CON DIFERENCIAS - ${reason}`
+            log: `CIERRE FORZADO CON DIFERENCIAS - ${reason}`,
         });
         closeSupervisorModal();
-        finishValidation(true);
+        await finishValidation(true);
     }
 }
 
@@ -2002,7 +2124,10 @@ function sendReportEmail(service) {
 async function startPickingTimer() {
     const id = document.getElementById('picker-id-input').value.trim();
     const order = document.getElementById('picking-order-input').value.trim().toUpperCase();
-    if (!id || !order) return alert("Datos incompletos");
+    if (!id || !order) {
+        VALIDACION_AUX.showToast('Datos incompletos (cédula y pedido)', 'error');
+        return;
+    }
 
     let empName = "ID:" + id;
     try {
@@ -2034,8 +2159,16 @@ async function startPickingTimer() {
  * Cancela el proceso de alistamiento actual
  * Limpia todos los datos sin guardar
  */
-function cancelPicking() {
+async function cancelPicking() {
     if (!confirm("¿Cancelar el alistamiento actual? Se perderán los datos de inicio.")) return;
+    if (app.alistamientoId) {
+        try {
+            await api.cancelarAlistamiento(app.alistamientoId, new Date().toISOString());
+        } catch (e) {
+            console.warn("No se pudo cancelar alistamiento:", e.message);
+        }
+    }
+    app.alistamientoId = null;
     app.user = null;
     app.orderId = null;
     app.pickingStartTime = null;
@@ -2072,6 +2205,6 @@ async function endPickingTimer() {
     localStorage.setItem('brakepak_picking_history', JSON.stringify(history));
 
     app.alistamientoId = null;
-    alert("✅ Alistamiento guardado");
+    VALIDACION_AUX.showToast('Alistamiento guardado', 'success');
     resetView('menu');
 }
