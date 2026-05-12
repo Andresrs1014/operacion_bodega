@@ -121,4 +121,48 @@
         visibility: visible;
         font-size: 6pt !important;
     }
+
+    /* ── REIMPRESIÓN constancia (#reprint-area) ── */
+    body.print-reprint-active * {
+        visibility: hidden;
+    }
+    body.print-reprint-active #reprint-area,
+    body.print-reprint-active #reprint-area * {
+        visibility: visible;
+    }
+    body.print-reprint-active #reprint-area {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: var(--zebra-page-w);
+    }
+    body.print-reprint-active .label-card {
+        width: calc(var(--zebra-page-w) - 2 * var(--zebra-margin));
+        min-height: auto;
+        margin: 0 auto !important;
+        border: 2px solid #000 !important;
+        box-sizing: border-box;
+    }
+    body.print-reprint-active .label-grid {
+        grid-template-columns: 28mm 1fr;
+    }
+    body.print-reprint-active .label-row {
+        display: flex;
+        width: 100%;
+    }
+    body.print-reprint-active .label-key {
+        background: transparent !important;
+        font-size: 7pt !important;
+        padding: 1.2mm !important;
+    }
+    body.print-reprint-active .label-val {
+        font-size: 8pt !important;
+        padding: 1.2mm !important;
+    }
+    body.print-reprint-active .big-order {
+        font-size: 22pt !important;
+    }
+    body.print-reprint-active .label-header h2 {
+        font-size: 10pt !important;
+    }
 }
