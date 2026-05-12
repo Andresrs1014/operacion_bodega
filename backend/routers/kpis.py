@@ -116,7 +116,10 @@ def ranking(
 ):
     inicio, fin = _rango(periodo)
 
-    auxiliares = db.query(Usuario).filter(Usuario.rol == "operario", Usuario.activo == True).all()
+    auxiliares = db.query(Usuario).filter(
+        Usuario.rol.in_(["operario", "admin"]),
+        Usuario.activo == True,
+    ).all()
     resultado = []
 
     for aux in auxiliares:
