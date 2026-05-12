@@ -47,17 +47,17 @@ function initNav(section, currentPage) {
             </div>
         </header>`;
 
-    // Reloj en tiempo real
+    // Reloj en tiempo real — siempre hora Colombia (America/Bogota)
+    const _fmtHora = () => new Date().toLocaleTimeString('es-CO', {
+        timeZone: 'America/Bogota',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
     (function tick() {
         const el = document.getElementById('bp-reloj');
-        if (el) el.textContent = new Date().toLocaleTimeString('es-CO', {
-            hour: '2-digit', minute: '2-digit', second: '2-digit'
-        });
+        if (el) el.textContent = _fmtHora();
     })();
     setInterval(() => {
         const el = document.getElementById('bp-reloj');
-        if (el) el.textContent = new Date().toLocaleTimeString('es-CO', {
-            hour: '2-digit', minute: '2-digit', second: '2-digit'
-        });
+        if (el) el.textContent = _fmtHora();
     }, 1000);
 }

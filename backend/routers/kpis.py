@@ -1,5 +1,6 @@
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from typing import Optional
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, case, and_
 from sqlalchemy.orm import Session
@@ -10,17 +11,35 @@ from models import Alistamiento, Correccion, Empaque, Pedido, Usuario, Validacio
 
 router = APIRouter(prefix="/kpis", tags=["KPIs"])
 
+BOGOTA = ZoneInfo("America/Bogota")
 
-def _rango(periodo: str):
-    """Retorna (fecha_inicio, fecha_fin) según el periodo solicitado."""
-    hoy = date.today()
+
+def _ahora_utc_naive() -> datetime:
+    """Retorna el momento actual en UTC como datetime naive (igual al formato en BD)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _bogota_midnight_to_utc(d: date) -> datetime:
+    """Convierte la medianoche de una fecha en Bogotá a UTC naive para consultas en BD."""
+    dt_bogota = datetime(d.year, d.month, d.day, tzinfo=BOGOTA)
+    return dt_bogota.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def _rango(periodo: str) -> tuple[datetime, datetime]:
+    """Retorna (fecha_inicio, fecha_fin) en UTC naive según el periodo en hora Colombia."""
+    ahora_bogota = datetime.now(BOGOTA)
+    hoy = ahora_bogota.date()
+
     if periodo == "semana":
         inicio = hoy - timedelta(days=hoy.weekday())
     elif periodo == "mes":
         inicio = hoy.replace(day=1)
     else:  # dia
         inicio = hoy
-    return datetime(inicio.year, inicio.month, inicio.day), datetime.now()
+
+    inicio_utc = _bogota_midnight_to_utc(inicio)
+    fin_utc = _ahora_utc_naive()
+    return inicio_utc, fin_utc
 
 
 # ── Resumen general ───────────────────────────────────────────────────────────
@@ -180,8 +199,8 @@ def detalle_auxiliar(
         historial.append({
             "id": v.id,
             "numero_pedido": v.pedido.numero_pedido if v.pedido else "-",
-            "hora_inicio": v.hora_inicio.isoformat(),
-            "hora_fin": v.hora_fin.isoformat() if v.hora_fin else None,
+            "hora_inicio": v.hora_inicio.isoformat() + "Z",
+            "hora_fin": (v.hora_fin.isoformat() + "Z") if v.hora_fin else None,
             "duracion_minutos": duracion,
             "estado": v.estado,
             "total_unidades": v.total_unidades,
@@ -214,7 +233,7 @@ def auxiliares_activos(
     ).all()
 
     resultado = []
-    ahora = datetime.utcnow()
+    ahora = _ahora_utc_naive()
     for v in en_proceso:
         minutos = round((ahora - v.hora_inicio).total_seconds() / 60, 1)
         resultado.append({
@@ -222,7 +241,7 @@ def auxiliares_activos(
             "auxiliar": v.validador.nombre if v.validador else "-",
             "numero_pedido": v.pedido.numero_pedido if v.pedido else "-",
             "minutos_transcurridos": minutos,
-            "hora_inicio": v.hora_inicio.isoformat(),
+            "hora_inicio": v.hora_inicio.isoformat() + "Z",
         })
 
     return resultado
@@ -235,19 +254,21 @@ def tendencia_hoy(
     db: Session = Depends(get_db),
     _=Depends(require_supervisor_or_admin),
 ):
-    """Cuántas validaciones se completaron por hora durante el día de hoy."""
-    hoy = date.today()
-    inicio = datetime(hoy.year, hoy.month, hoy.day)
-    fin = datetime.now()
+    """Cuántas validaciones se completaron por hora durante el día de hoy (hora Colombia)."""
+    ahora_bogota = datetime.now(BOGOTA)
+    hoy = ahora_bogota.date()
+    inicio_utc = _bogota_midnight_to_utc(hoy)
+    fin_utc = _ahora_utc_naive()
 
     vals = db.query(Validacion).filter(
-        Validacion.hora_inicio.between(inicio, fin),
+        Validacion.hora_inicio.between(inicio_utc, fin_utc),
         Validacion.hora_fin.isnot(None),
     ).all()
 
     por_hora = {}
     for v in vals:
-        hora = v.hora_inicio.hour
-        por_hora[hora] = por_hora.get(hora, 0) + 1
+        # Convertir hora UTC almacenada a hora Colombia para el heatmap
+        hora_bogota = v.hora_inicio.replace(tzinfo=timezone.utc).astimezone(BOGOTA).hour
+        por_hora[hora_bogota] = por_hora.get(hora_bogota, 0) + 1
 
     return [{"hora": h, "validaciones": por_hora.get(h, 0)} for h in range(6, 22)]

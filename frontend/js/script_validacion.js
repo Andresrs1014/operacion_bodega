@@ -1980,21 +1980,22 @@ async function reprintLabelFromHistory(validacionId) {
     const hasNews = snap.estado === 'CON_NOVEDADES';
     const status = hasNews ? 'CERRADO CON NOVEDADES DE ALISTAMIENTO' : 'PERFECTO - OK';
     const statusClass = hasNews ? 'text-brand-red' : 'text-green-700';
-    const fmtDate = (iso) => iso ? new Date(iso).toLocaleString() : '—';
+    const fmtDate = (iso) => iso ? new Date(iso).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : '—';
+    const esc = (s) => VALIDACION_AUX.escapeAttr(String(s ?? ''));
 
     const html = `
         <div class="label-header"><h2 class="font-black text-2xl uppercase">Constancia de Validación</h2><div class="text-3xl font-gotham tracking-tighter">L<i class="fa-solid fa-arrows-spin text-black mx-1"></i>GIMAT</div></div>
         <div class="label-grid text-sm text-slate-900">
-            <div class="label-row"><div class="label-key">N° PEDIDO</div><div class="label-val py-6 justify-center"><span class="big-order">${snap.numero_pedido}</span></div></div>
-            <div class="label-row"><div class="label-key">CLIENTE</div><div class="label-val text-xl font-bold uppercase">${snap.cliente}</div></div>
-            <div class="label-row"><div class="label-key">ALISTADO POR</div><div class="label-val uppercase font-bold">${snap.picker}</div></div>
-            <div class="label-row"><div class="label-key">VALIDADO POR</div><div class="label-val uppercase font-bold">${snap.validador}</div></div>
+            <div class="label-row"><div class="label-key">N° PEDIDO</div><div class="label-val py-6 justify-center"><span class="big-order">${esc(snap.numero_pedido)}</span></div></div>
+            <div class="label-row"><div class="label-key">CLIENTE</div><div class="label-val text-xl font-bold uppercase">${esc(snap.cliente)}</div></div>
+            <div class="label-row"><div class="label-key">ALISTADO POR</div><div class="label-val uppercase font-bold">${esc(snap.picker)}</div></div>
+            <div class="label-row"><div class="label-key">VALIDADO POR</div><div class="label-val uppercase font-bold">${esc(snap.validador)}</div></div>
             <div class="label-row"><div class="label-key">F/H INI VALIDACIÓN</div><div class="label-val font-mono text-xs">${fmtDate(snap.hora_inicio)}</div></div>
             <div class="label-row"><div class="label-key">F/H FIN VALIDACIÓN</div><div class="label-val font-mono font-bold text-xs">${fmtDate(snap.hora_fin)}</div></div>
-            <div class="label-row"><div class="label-key">TOTAL UNIDADES</div><div class="label-val text-2xl font-black">${snap.total_unidades}</div></div>
-            <div class="label-row"><div class="label-key">DIRECCIÓN</div><div class="label-val uppercase text-xs">${snap.direccion}</div></div>
-            <div class="label-row"><div class="label-key">CIUDAD</div><div class="label-val uppercase font-bold">${snap.ciudad}</div></div>
-            <div class="label-row"><div class="label-key">DEPARTAMENTO</div><div class="label-val uppercase font-bold">${snap.departamento}</div></div>
+            <div class="label-row"><div class="label-key">TOTAL UNIDADES</div><div class="label-val text-2xl font-black">${esc(snap.total_unidades)}</div></div>
+            <div class="label-row"><div class="label-key">DIRECCIÓN</div><div class="label-val uppercase text-xs">${esc(snap.direccion)}</div></div>
+            <div class="label-row"><div class="label-key">CIUDAD</div><div class="label-val uppercase font-bold">${esc(snap.ciudad)}</div></div>
+            <div class="label-row"><div class="label-key">DEPARTAMENTO</div><div class="label-val uppercase font-bold">${esc(snap.departamento)}</div></div>
             <div class="label-row"><div class="label-key">ESTADO</div><div class="label-val font-black uppercase text-lg ${statusClass}">${status}</div></div>
         </div>
     `;

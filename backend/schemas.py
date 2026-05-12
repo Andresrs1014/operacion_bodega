@@ -1,6 +1,12 @@
 from datetime import datetime
-from typing import List, Literal, Optional
-from pydantic import BaseModel
+from typing import Any, List, Literal, Optional
+from pydantic import BaseModel, field_serializer
+
+
+def _utc_iso(v: Optional[datetime]) -> Optional[str]:
+    """Serializa un datetime naive (almacenado como UTC) añadiendo 'Z' para que el
+    navegador lo interprete correctamente como UTC y lo convierta a hora local."""
+    return (v.isoformat() + "Z") if v is not None else None
 
 
 # ── AUTH ──────────────────────────────────────────────────────────────────────
@@ -103,6 +109,10 @@ class MisValidacionOut(BaseModel):
     estado: str
     total_unidades: int = 0
 
+    @field_serializer("hora_inicio", "hora_fin")
+    def _fmt(self, v: Optional[datetime]) -> Optional[str]:
+        return _utc_iso(v)
+
 
 class ValidacionBorradorUpsert(BaseModel):
     numero_pedido: str
@@ -115,6 +125,10 @@ class ValidacionBorradorResponse(BaseModel):
     payload: dict
     id_validacion: Optional[int] = None
     actualizado_en: datetime
+
+    @field_serializer("actualizado_en")
+    def _fmt(self, v: Optional[datetime]) -> Optional[str]:
+        return _utc_iso(v)
 
 
 class LabelSnapshotOut(BaseModel):
@@ -130,6 +144,10 @@ class LabelSnapshotOut(BaseModel):
     hora_fin: Optional[datetime] = None
     total_unidades: int
     estado: str
+
+    @field_serializer("hora_inicio", "hora_fin")
+    def _fmt(self, v: Optional[datetime]) -> Optional[str]:
+        return _utc_iso(v)
 
 
 # ── PRODUCTOS / UNIDADES DE EMPAQUE ───────────────────────────────────────────

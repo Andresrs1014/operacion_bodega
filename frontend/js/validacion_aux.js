@@ -103,7 +103,7 @@ const VALIDACION_AUX = {
             }
             tbody.innerHTML = rows
                 .map((r) => {
-                    const fin = r.hora_fin ? new Date(r.hora_fin).toLocaleString() : '—';
+                    const fin = r.hora_fin ? new Date(r.hora_fin).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : '—';
                     const st =
                         r.estado === 'OK'
                             ? '<span class="text-emerald-600 font-bold">OK</span>'
