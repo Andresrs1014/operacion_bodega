@@ -12,7 +12,9 @@
       "Bash(sed -n '138,145p' C:/operacion_bodega/frontend/js/api.js)",
       "Bash(sed -n '1860,1895p' C:/operacion_bodega/frontend/js/script_validacion.js)",
       "Bash(docker compose:*)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(grep -v \"^[0-9A-Za-z].*\\\\s1$\" C:operacion_bodegaunidades_empaque.md)",
+      "Bash(grep -P \"\\\\t[0-9]+\\\\s*$\" /c/operacion_bodega/unidades_empaque.md)"
     ]
   }
 }

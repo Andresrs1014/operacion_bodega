@@ -276,26 +276,47 @@ function handleFileSelect(file) {
     reader.readAsBinaryString(file);
 }
 
+// Aliases sincronizados con el backend (mismo criterio de detección)
+const _ALIAS_REF = ['referencia', 'ref', 'codigo', 'código', 'cod',
+                    'codigo referencia', 'código referencia', 'codigo producto', 'code'];
+const _ALIAS_UE  = ['ue', 'unidad_empaque', 'unidad de empaque', 'unidades de empaque',
+                    'unidad empaque', 'und emp', 'und. de empaque', 'und. empaque',
+                    'cantidad empaque', 'u.e.', 'unidades', 'und'];
+const _ALIAS_TXT = ['texto', 'texto_unidad_empaque', 'texto ue', 'descripcion', 'descripción'];
+
+function _matchCol(headers, aliases) {
+    // Exact match primero
+    let idx = headers.findIndex(h => aliases.includes(h));
+    if (idx !== -1) return idx;
+    // Partial match (alias dentro del header o header dentro de alias)
+    idx = headers.findIndex(h => aliases.some(a => a.length >= 2 && (h.includes(a) || a.includes(h))));
+    return idx;
+}
+
 function parseImportHeaders(raw) {
     const headers = (raw[0] || []).map(h => String(h || '').trim().toLowerCase());
-    const idxRef = headers.findIndex(h => ['referencia', 'ref'].includes(h));
-    const idxUe  = headers.findIndex(h => ['ue', 'unidad_empaque', 'unidad de empaque'].includes(h));
-    const idxTxt = headers.findIndex(h => ['texto', 'texto_unidad_empaque', 'texto ue'].includes(h));
+    const idxRef = _matchCol(headers, _ALIAS_REF);
+    const idxUe  = _matchCol(headers, _ALIAS_UE);
+    const idxTxt = _matchCol(headers, _ALIAS_TXT);
 
     const ok = (found) => found !== -1
         ? '<i class="fa-solid fa-check text-green-500"></i>'
         : '<i class="fa-solid fa-xmark text-red-500"></i>';
 
-    document.getElementById('import-val-ref').innerHTML  = `${ok(idxRef)} Columna "Referencia"`;
-    document.getElementById('import-val-ue').innerHTML   = `${ok(idxUe)}  Columna "UE"`;
+    document.getElementById('import-val-ref').innerHTML = `${ok(idxRef)} Columna "Referencia"`;
+    document.getElementById('import-val-ue').innerHTML  = `${ok(idxUe)}  Columna "Unidad de Empaque"`;
 
     const valEl = document.getElementById('import-validation');
     valEl.classList.remove('hidden');
 
     if (idxRef === -1 || idxUe === -1) {
+        const faltantes = [];
+        if (idxRef === -1) faltantes.push('"Referencia"');
+        if (idxUe  === -1) faltantes.push('"Unidad de Empaque"');
         document.getElementById('import-file-error').textContent =
-            "Verifica que el archivo tenga columnas 'Referencia' y 'UE'.";
+            `Columnas no encontradas: ${faltantes.join(' y ')}. Encabezados detectados: [${headers.join(', ')}]`;
         document.getElementById('import-file-error').classList.remove('hidden');
+        document.getElementById('import-preview').classList.add('hidden');
         return;
     }
 
@@ -303,14 +324,38 @@ function parseImportHeaders(raw) {
     _importParsedRows = raw.slice(1)
         .filter(row => row[idxRef] != null || row[idxUe] != null)
         .map(row => ({
-            referencia: row[idxRef],
-            unidad_empaque: row[idxUe],
+            referencia:      row[idxRef],
+            unidad_empaque:  row[idxUe],
             texto: idxTxt !== -1 ? (row[idxTxt] || '') : '',
         }));
 
     document.getElementById('import-val-rows').textContent =
         `→ ${_importParsedRows.length} filas detectadas`;
     document.getElementById('btn-do-import').disabled = _importParsedRows.length === 0;
+
+    _renderImportPreview(_importParsedRows.slice(0, 5));
+}
+
+function _renderImportPreview(filas) {
+    const preview = document.getElementById('import-preview');
+    const tbody   = document.getElementById('import-preview-body');
+    if (!filas.length) { preview.classList.add('hidden'); return; }
+
+    const esc = s => String(s ?? '').replace(/[<>&"]/g, c =>
+        ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+
+    tbody.innerHTML = filas.map(r => {
+        const ueVal = r.unidad_empaque;
+        const ueNum = Number(ueVal);
+        const ueAlert = !Number.isInteger(ueNum) || ueNum < 1 || ueNum > 9999;
+        return `<tr class="border-b border-slate-100">
+            <td class="px-2 py-1 font-mono text-xs">${esc(r.referencia)}</td>
+            <td class="px-2 py-1 text-center text-xs font-bold ${ueAlert ? 'text-red-600' : 'text-slate-700'}">${esc(ueVal)}</td>
+            <td class="px-2 py-1 text-xs text-slate-400">${esc(r.texto)}</td>
+        </tr>`;
+    }).join('');
+
+    preview.classList.remove('hidden');
 }
 
 async function submitImport() {

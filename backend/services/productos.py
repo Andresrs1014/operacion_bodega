@@ -151,12 +151,19 @@ def import_productos_ue(db: Session, rows: list[dict]) -> dict:
                         continue
                     ue_raw = row.get("unidad_empaque", 1)
                     try:
-                        ue = int(ue_raw)
+                        # Normalizar: remover espacios y convertir float a int
+                        ue_str = str(ue_raw).strip().replace(",", "").split(".")[0]
+                        ue = int(ue_str)
                     except (ValueError, TypeError):
                         errores.append({"fila": i, "referencia": ref, "motivo": f"UE inválida: '{ue_raw}'"})
                         continue
                     if ue < 1:
                         errores.append({"fila": i, "referencia": ref, "motivo": "UE debe ser >= 1"})
+                        continue
+                    if ue > 9_999:
+                        errores.append({"fila": i, "referencia": ref,
+                                        "motivo": f"UE={ue} es sospechosamente alta. "
+                                                  f"Verifique que la columna no esté formateada como fecha en Excel."})
                         continue
                     texto = str(row.get("texto", "") or "").strip()[:50] or None
 

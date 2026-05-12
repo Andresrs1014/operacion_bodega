@@ -32,6 +32,29 @@ from services.productos import (
 
 router = APIRouter(prefix="/productos/ue", tags=["Productos UE"])
 
+# Aliases de columna aceptados (case-insensitive, strip aplicado antes de comparar)
+_ALIAS_REF: frozenset[str] = frozenset({
+    "referencia", "ref", "codigo", "código", "cod",
+    "codigo referencia", "código referencia", "codigo producto", "code",
+})
+_ALIAS_UE: frozenset[str] = frozenset({
+    "ue", "unidad_empaque", "unidad de empaque", "unidades de empaque",
+    "unidad empaque", "und emp", "und. de empaque", "und. empaque",
+    "cantidad empaque", "u.e.", "unidades", "und",
+})
+
+
+def _buscar_col(headers: list[str], aliases: frozenset[str]) -> int | None:
+    """Detecta índice de columna: exact match primero, luego partial match.
+    Evita falsos positivos usando longitud mínima de 2 chars en partial."""
+    for i, h in enumerate(headers):
+        if h in aliases:
+            return i
+    for i, h in enumerate(headers):
+        if any(len(a) >= 2 and (a in h or h in a) for a in aliases):
+            return i
+    return None
+
 
 @router.get("", response_model=ProductoUePage)
 def listar_ue(
@@ -113,11 +136,17 @@ async def importar_ue(
 
     # Detectar encabezados en fila 1 (case-insensitive, trim)
     headers = [str(c.value or "").strip().lower() for c in next(ws.iter_rows(min_row=1, max_row=1))]
-    try:
-        idx_ref = next(i for i, h in enumerate(headers) if h in ("referencia", "ref"))
-        idx_ue  = next(i for i, h in enumerate(headers) if h in ("ue", "unidad_empaque", "unidad de empaque"))
-    except StopIteration:
-        raise HTTPException(status_code=422, detail="El archivo debe tener columnas 'Referencia' y 'UE'.")
+    idx_ref = _buscar_col(headers, _ALIAS_REF)
+    idx_ue  = _buscar_col(headers, _ALIAS_UE)
+    if idx_ref is None or idx_ue is None:
+        faltantes = []
+        if idx_ref is None: faltantes.append("Referencia")
+        if idx_ue  is None: faltantes.append("Unidad de Empaque")
+        raise HTTPException(
+            status_code=422,
+            detail=f"Columnas no encontradas: {', '.join(faltantes)}. "
+                   f"Encabezados detectados: {headers or ['(vacío)']}",
+        )
 
     # Leer filas de datos
     rows = []
@@ -145,17 +174,31 @@ async def importar_ue(
 
 @router.get("/plantilla")
 def descargar_plantilla(_: Usuario = Depends(require_supervisor_or_admin)):
-    """Descarga una plantilla Excel vacía con columnas Referencia y UE."""
+    """Descarga una plantilla Excel con columnas Referencia, Unidad de Empaque y Texto."""
     from fastapi.responses import StreamingResponse
+    from openpyxl.styles import Font, PatternFill, Alignment
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "UE"
-    ws.append(["Referencia", "UE", "Texto"])
+
+    # Encabezados
+    ws.append(["Referencia", "Unidad de Empaque", "Texto"])
+    for col_letter, bold in [("A", True), ("B", True), ("C", True)]:
+        ws[f"{col_letter}1"].font = Font(bold=True)
+        ws[f"{col_letter}1"].fill = PatternFill("solid", fgColor="E2E8F0")
+
+    # Filas ejemplo
     ws.append(["EJEMPLO-001", 6, "PAR X 6"])
     ws.append(["EJEMPLO-002", 12, "DOCENA"])
-    ws.column_dimensions["A"].width = 20
-    ws.column_dimensions["B"].width = 8
-    ws.column_dimensions["C"].width = 20
+    ws.append(["EJEMPLO-003", 1, "UNIDAD"])
+
+    # Formato numérico entero en columna B para evitar auto-formato fecha de Excel
+    for row_idx in range(2, 5002):  # primeras 5000 filas de datos
+        ws[f"B{row_idx}"].number_format = "0"
+
+    ws.column_dimensions["A"].width = 22
+    ws.column_dimensions["B"].width = 20
+    ws.column_dimensions["C"].width = 22
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)
