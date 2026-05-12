@@ -1,7 +1,7 @@
 from datetime import datetime, date, timedelta, timezone
 from typing import Optional
 from zoneinfo import ZoneInfo
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, case, and_
 from sqlalchemy.orm import Session
 
@@ -245,6 +245,34 @@ def auxiliares_activos(
         })
 
     return resultado
+
+
+# ── Forzar cierre de validación huérfana ─────────────────────────────────────
+
+@router.post("/activos/{validacion_id}/forzar-cierre")
+def forzar_cierre_validacion(
+    validacion_id: int,
+    db: Session = Depends(get_db),
+    _=Depends(require_supervisor_or_admin),
+):
+    """Cierra forzosamente una validación que quedó abierta (huérfana).
+    Solo accesible por supervisor o admin. Se cierra como CON_NOVEDADES."""
+    val = db.query(Validacion).filter(
+        Validacion.id == validacion_id,
+        Validacion.estado == "EN_PROCESO",
+        Validacion.hora_fin.is_(None),
+    ).first()
+
+    if not val:
+        raise HTTPException(status_code=404, detail="Validación activa no encontrada.")
+
+    val.hora_fin = _ahora_utc_naive()
+    val.estado = "CON_NOVEDADES"
+    if val.pedido:
+        val.pedido.estado = "EN_PROCESO"
+
+    db.commit()
+    return {"ok": True, "validacion_id": validacion_id}
 
 
 # ── Tendencia por hora (heatmap del día) ─────────────────────────────────────
