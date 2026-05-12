@@ -11,7 +11,8 @@
       "Bash(sed -n '45,57p' C:/operacion_bodega/backend/routers/validacion.py)",
       "Bash(sed -n '138,145p' C:/operacion_bodega/frontend/js/api.js)",
       "Bash(sed -n '1860,1895p' C:/operacion_bodega/frontend/js/script_validacion.js)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(xargs grep:*)"
     ]
   }
 }
